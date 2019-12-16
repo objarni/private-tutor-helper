@@ -1,9 +1,9 @@
 .PHONY: run
 run:
-	echo Not yet implemented
+	cd output && python3.6 server.py
 
 PHONY: build
-build: output/index.html output/js/app.js
+build: output/index.html output/js/app.js output/bottle.py output/server.py
 	echo Building...
 
 output/index.html: index.html
@@ -12,3 +12,8 @@ output/index.html: index.html
 output/js/app.js: src/Main.elm
 	elm make src/Main.elm --output=output/js/app.js
 
+output/bottle.py: src/bottle.py
+	cp src/bottle.py output
+
+output/server.py: src/server.py
+	cp src/server.py output
