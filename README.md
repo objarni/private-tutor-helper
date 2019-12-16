@@ -42,15 +42,10 @@ The previous iteration of this "system" was a single `journal.json` file structu
 .. then surf to http://localhost:8080/journal.html to read and update journal.
 
 
-## What technologies are used?
+### What technologies are used?
 
   - Elm0.19 + elm-ui for front end
   - Python3.6 with bottle.py for backend
   - git + GitHub for hosting, version control and CI
   - Make for building, testing, serving app
 
-
-
-### How do I clean up?
-
-    make clean
