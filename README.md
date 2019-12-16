@@ -35,6 +35,13 @@ The previous iteration of this "system" was a single `journal.json` file structu
 }
 ```
 
+### How do I run the app?
+
+    make build && make run
+
+.. then surf to http://localhost:8080/journal.html to read and update journal.
+
+
 ## What technologies are used?
 
   - Elm0.19 + elm-ui for front end
@@ -43,11 +50,7 @@ The previous iteration of this "system" was a single `journal.json` file structu
   - Make for building, testing, serving app
 
 
-## How do I run the app?
 
-    make build && make run
-
-
-# How do I clean up?
+### How do I clean up?
 
     make clean
