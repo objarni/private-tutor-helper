@@ -10,7 +10,7 @@ output/js/app.js: src/Main.elm
 	elm make src/Main.elm --output=output/js/app.js
 
 output/index.html: src/index.html
-	cp index.html output
+	cp src/index.html output
 
 output/bottle.py: src/bottle.py
 	cp src/bottle.py output
