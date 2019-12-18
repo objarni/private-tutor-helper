@@ -1,5 +1,6 @@
 module Main exposing (main, myElement, myRowOfStuff)
 
+import Browser exposing (element)
 import Element
     exposing
         ( Element
@@ -18,8 +19,11 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html exposing (Html)
+import Json.Decode as D
 
 
+main : Html msg
 main =
     Element.layout []
         myRowOfStuff
@@ -34,13 +38,41 @@ myRowOfStuff =
 
 myElement : Element msg
 myElement =
-    el
-        [ bg
-        , fg
-        , Border.rounded 3
-        , padding 30
-        ]
-        (text "Hello world")
+    let
+        result =
+            D.decodeString modelDecoder jsonExample
+    in
+    case result of
+        Ok txt ->
+            el
+                [ bg
+                , fg
+                , Border.rounded 3
+                , padding 30
+                ]
+                (text txt)
+
+        _ ->
+            el
+                [ bg
+                , fg
+                , Border.rounded 3
+                , padding 30
+                ]
+                (text "Error in JSON!")
+
+
+jsonExample =
+    "\"Hello World!\""
+
+
+type alias Model =
+    String
+
+
+modelDecoder : D.Decoder Model
+modelDecoder =
+    D.string
 
 
 bg =
