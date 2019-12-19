@@ -63,7 +63,7 @@ myElement =
 
 
 jsonExample =
-    "\"Hello World!\""
+    "\"Lesson Journal!\""
 
 
 type alias Model =
