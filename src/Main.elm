@@ -44,10 +44,10 @@ myElement =
             D.decodeString modelDecoder jsonExample
     in
     case result of
-        Ok txt ->
+        Ok (txt :: _) ->
             el
-                [ bg
-                , fg
+                [ bgBlue
+                , fgWhite
                 , Border.rounded 3
                 , padding 30
                 ]
@@ -55,8 +55,8 @@ myElement =
 
         _ ->
             el
-                [ bg
-                , fg
+                [ bgRed
+                , fgWhite
                 , Border.rounded 3
                 , padding 30
                 ]
@@ -64,21 +64,29 @@ myElement =
 
 
 jsonExample =
-    "\"Lesson Journal!\""
+    """
+{
+  "Pupils": [ "Alex", "Bertha", "Cecil" ]
+}
+"""
 
 
 type alias Model =
-    String
+    List String
 
 
-modelDecoder : D.Decoder Model
+modelDecoder : D.Decoder (List String)
 modelDecoder =
-    D.string
+    D.field "Pupils" (D.list D.string)
 
 
-bg =
+bgBlue =
     Background.color (rgb255 0 140 165)
 
 
-fg =
+bgRed =
+    Background.color (rgb255 140 10 10)
+
+
+fgWhite =
     Font.color (rgb255 255 255 255)
