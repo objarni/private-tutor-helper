@@ -1,4 +1,4 @@
-module Main exposing (main, myElement, myRowOfStuff)
+module Main exposing (main, mainColumn, myElement)
 
 import Browser exposing (element)
 import Element
@@ -7,6 +7,7 @@ import Element
         , alignRight
         , centerX
         , centerY
+        , column
         , el
         , fill
         , padding
@@ -26,12 +27,12 @@ import Json.Decode as D
 main : Html msg
 main =
     Element.layout []
-        myRowOfStuff
+        mainColumn
 
 
-myRowOfStuff : Element msg
-myRowOfStuff =
-    row [ width fill, centerY, spacing 30 ]
+mainColumn : Element msg
+mainColumn =
+    column [ width fill, centerY, spacing 30 ]
         [ el [ centerX ] myElement
         ]
 
