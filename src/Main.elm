@@ -1,4 +1,4 @@
-module Main exposing (main, mainColumn, myElement)
+module Main exposing (main)
 
 import Browser exposing (element)
 import Element
@@ -16,6 +16,7 @@ import Element
         , spacing
         , text
         , width
+        , wrappedRow
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -32,35 +33,51 @@ main =
 
 mainColumn : Element msg
 mainColumn =
-    column [ width fill, centerY, spacing 30 ]
-        [ el [ centerX ] myElement
+    column [ centerX, spacing bigSpace ]
+        [ header, content ]
+
+
+header =
+    el
+        [ bgBlue
+        , fgWhite
+        , roundedBorder
+        , padding bigSpace
+        , centerX
         ]
+        (text "Lesson Journal")
 
 
-myElement : Element msg
-myElement =
+content : Element msg
+content =
     let
         result =
             D.decodeString modelDecoder jsonExample
     in
     case result of
-        Ok (txt :: _) ->
-            el
-                [ bgBlue
-                , fgWhite
-                , Border.rounded 3
-                , padding 30
-                ]
-                (text txt)
+        Ok pupils ->
+            wrappedRow [ spacing smallSpace ]
+                (List.map (\txt -> pupilButton txt) pupils)
 
         _ ->
             el
                 [ bgRed
                 , fgWhite
-                , Border.rounded 3
-                , padding 30
+                , roundedBorder
+                , padding smallSpace
                 ]
                 (text "Error in JSON!")
+
+
+pupilButton : String -> Element a
+pupilButton txt =
+    el
+        [ bgBlue
+        , fgWhite
+        , roundedBorder
+        , padding smallSpace
+        ]
+        (text txt)
 
 
 jsonExample =
@@ -90,3 +107,15 @@ bgRed =
 
 fgWhite =
     Font.color (rgb255 255 255 255)
+
+
+smallSpace =
+    20
+
+
+bigSpace =
+    40
+
+
+roundedBorder =
+    Border.rounded 10
