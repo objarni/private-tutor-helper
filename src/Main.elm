@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Browser exposing (element)
+import Browser exposing (sandbox)
 import Element
     exposing
         ( Element
@@ -21,20 +21,42 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Html exposing (Html)
+import Html.Events
 import Json.Decode as D
 
 
-main : Html msg
+
+--main : Html Msg
+
+
 main =
+    Browser.sandbox
+        { init = init
+        , update = update
+        , view = view
+        }
+
+
+init =
+    [ "Alex", "Bertha", "Cecil" ]
+
+
+update : Msg -> Model -> Model
+update ClickMsg model =
+    model ++ [ "Dolph" ]
+
+
+view model =
     Element.layout []
-        mainColumn
+        (mainColumn model)
 
 
-mainColumn : Element msg
-mainColumn =
+mainColumn : Model -> Element Msg
+mainColumn model =
     column [ centerX, spacing bigSpace ]
-        [ header, content ]
+        [ header, content model ]
 
 
 header =
@@ -48,28 +70,13 @@ header =
         (text "Lesson Journal")
 
 
-content : Element msg
-content =
-    let
-        result =
-            D.decodeString modelDecoder jsonExample
-    in
-    case result of
-        Ok pupils ->
-            wrappedRow [ spacing smallSpace ]
-                (List.map (\txt -> pupilButton txt) pupils)
-
-        _ ->
-            el
-                [ bgRed
-                , fgWhite
-                , roundedBorder
-                , padding smallSpace
-                ]
-                (text "Error in JSON!")
+content : Model -> Element Msg
+content model =
+    wrappedRow [ spacing smallSpace ]
+        (List.map (\txt -> pupilButton txt) model)
 
 
-pupilButton : String -> Element a
+pupilButton : String -> Element Msg
 pupilButton txt =
     el
         [ bgBlue
@@ -77,7 +84,25 @@ pupilButton txt =
         , roundedBorder
         , padding smallSpace
         ]
-        (text txt)
+        (Element.html
+            (Html.button [ Html.Events.onClick ClickMsg ] [ Html.text txt ])
+        )
+
+
+
+--Input.button
+--    [ bgBlue
+--    , fgWhite
+--    , roundedBorder
+--    , padding smallSpace
+--    ]
+--    { label = text txt
+--    , onPress = Just ClickMsg
+--    }
+
+
+type Msg
+    = ClickMsg
 
 
 jsonExample =
