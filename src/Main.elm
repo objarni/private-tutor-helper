@@ -40,12 +40,16 @@ main =
 
 
 init =
-    [ "Alex", "Bertha", "Cecil" ]
+    { pupils = [ "Alex", "Bertha", "Cecil" ]
+    , text = "No response yet"
+    }
 
 
 update : Msg -> Model -> Model
-update ClickMsg model =
-    model ++ [ "Dolph" ]
+update ClickMsg { pupils, text } =
+    { pupils = pupils ++ [ "Dolph" ]
+    , text = text
+    }
 
 
 view model =
@@ -56,7 +60,11 @@ view model =
 mainColumn : Model -> Element Msg
 mainColumn model =
     column [ centerX, spacing bigSpace ]
-        [ header, content model ]
+        [ header, content model, footer model.text ]
+
+
+footer txt =
+    el [ centerX ] (text txt)
 
 
 header =
@@ -73,7 +81,7 @@ header =
 content : Model -> Element Msg
 content model =
     wrappedRow [ spacing smallSpace ]
-        (List.map (\txt -> pupilButton txt) model)
+        (List.map (\txt -> pupilButton txt) model.pupils)
 
 
 pupilButton : String -> Element Msg
@@ -114,11 +122,13 @@ jsonExample =
 
 
 type alias Model =
-    List String
+    { pupils : List String
+    , text : String
+    }
 
 
-modelDecoder : D.Decoder (List String)
-modelDecoder =
+jsonDecoder : D.Decoder (List String)
+jsonDecoder =
     D.field "Pupils" (D.list D.string)
 
 
