@@ -1,21 +1,18 @@
 # coding: utf-8
-from bottle import route, run, template, static_file
+from bottle import debug, route, run, template, static_file
 
 
-@route('/js/app.js')
-def elm_app():
-    return static_file('js/app.js', root='.')
+static_paths = ["js/app.js", "index.html", "journal.json"]
 
 
-@route('/')
-def index():
-    return static_file('index.html', root='.')
+@route("/<path:re:.*>")
+def path(path):
+    if path in static_paths:
+        return static_file(path, ".")
+    else:
+        return "Unknown path"
 
 
-@route('/load.json')
-def load_json():
-    return static_file('journal.json', root='.')
-
-
-run(host='localhost', port=8000)
-
+run(
+    reloader=True, host="localhost", port=8000,
+)
