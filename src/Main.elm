@@ -11,10 +11,6 @@ import Html.Events
 import Json.Decode as D
 
 
-
---main : Html Msg
-
-
 main =
     Browser.sandbox
         { init = init
@@ -76,11 +72,19 @@ pupilButton txt =
         , roundedBorder
         , Element.padding smallSpace
         ]
-        (Element.html
-            (Html.button [ Html.Events.onClick ClickMsg ]
-                [ Html.text txt ]
-            )
+        (Input.button []
+            { onPress = Just ClickMsg
+            , label = Element.text txt
+            }
         )
+
+
+
+--(Element.html
+--    (Html.button [ Html.Events.onClick ClickMsg ]
+--        [ Html.text txt ]
+--    )
+--)
 
 
 type Msg
