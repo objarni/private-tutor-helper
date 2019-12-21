@@ -8,28 +8,68 @@ import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Events
+import Http
 import Json.Decode as D
 
 
+main : Program () Model Msg
 main =
-    Browser.sandbox
+    Browser.element
         { init = init
         , update = update
         , view = view
+        , subscriptions = subscriptions
         }
 
 
-init =
-    { pupils = [ "Alex", "Bertha", "Cecil" ]
-    , text = "No response yet"
+type alias Model =
+    { pupils : List String
+    , text : String
     }
 
 
-update : Msg -> Model -> Model
-update ClickMsg { pupils, text } =
-    { pupils = pupils ++ [ "Dolph" ]
-    , text = text
-    }
+type Msg
+    = ClickMsg
+    | GotText (Result Http.Error String)
+
+
+init _ =
+    ( { pupils = [ "Alex", "Bertha", "Cecil" ]
+      , text = "No response yet"
+      }
+    , Cmd.none
+    )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg { pupils, text } =
+    case msg of
+        ClickMsg ->
+            ( { pupils = pupils ++ [ "Dolph" ]
+              , text = "Added pupil"
+              }
+            , Http.get
+                { url = "/journal.json"
+                , expect = Http.expectString GotText
+                }
+            )
+
+        GotText result ->
+            case result of
+                Err _ ->
+                    ( { pupils = pupils, text = "Http error" }
+                    , Cmd.none
+                    )
+
+                Ok txt ->
+                    ( { pupils = pupils, text = txt }
+                    , Cmd.none
+                    )
 
 
 view model =
@@ -79,30 +119,12 @@ pupilButton txt =
         )
 
 
-
---(Element.html
---    (Html.button [ Html.Events.onClick ClickMsg ]
---        [ Html.text txt ]
---    )
---)
-
-
-type Msg
-    = ClickMsg
-
-
 jsonExample =
     """
 {
   "Pupils": [ "Alex", "Bertha", "Cecil" ]
 }
 """
-
-
-type alias Model =
-    { pupils : List String
-    , text : String
-    }
 
 
 jsonDecoder : D.Decoder (List String)
