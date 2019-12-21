@@ -1,23 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (sandbox)
-import Element
-    exposing
-        ( Element
-        , alignRight
-        , centerX
-        , centerY
-        , column
-        , el
-        , fill
-        , padding
-        , rgb255
-        , row
-        , spacing
-        , text
-        , width
-        , wrappedRow
-        )
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -59,54 +43,44 @@ view model =
 
 mainColumn : Model -> Element Msg
 mainColumn model =
-    column [ centerX, spacing bigSpace ]
+    Element.column [ Element.centerX, Element.spacing bigSpace ]
         [ header, content model, footer model.text ]
 
 
 footer txt =
-    el [ centerX ] (text txt)
+    Element.el [ Element.centerX ] (Element.text txt)
 
 
 header =
-    el
+    Element.el
         [ bgBlue
         , fgWhite
         , roundedBorder
-        , padding bigSpace
-        , centerX
+        , Element.padding bigSpace
+        , Element.centerX
         ]
-        (text "Lesson Journal")
+        (Element.text "Lesson Journal")
 
 
 content : Model -> Element Msg
 content model =
-    wrappedRow [ spacing smallSpace ]
+    Element.wrappedRow [ Element.spacing smallSpace ]
         (List.map (\txt -> pupilButton txt) model.pupils)
 
 
 pupilButton : String -> Element Msg
 pupilButton txt =
-    el
+    Element.el
         [ bgBlue
         , fgWhite
         , roundedBorder
-        , padding smallSpace
+        , Element.padding smallSpace
         ]
         (Element.html
-            (Html.button [ Html.Events.onClick ClickMsg ] [ Html.text txt ])
+            (Html.button [ Html.Events.onClick ClickMsg ]
+                [ Html.text txt ]
+            )
         )
-
-
-
---Input.button
---    [ bgBlue
---    , fgWhite
---    , roundedBorder
---    , padding smallSpace
---    ]
---    { label = text txt
---    , onPress = Just ClickMsg
---    }
 
 
 type Msg
@@ -133,15 +107,15 @@ jsonDecoder =
 
 
 bgBlue =
-    Background.color (rgb255 0 140 165)
+    Background.color (Element.rgb255 0 140 165)
 
 
 bgRed =
-    Background.color (rgb255 140 10 10)
+    Background.color (Element.rgb255 140 10 10)
 
 
 fgWhite =
-    Font.color (rgb255 255 255 255)
+    Font.color (Element.rgb255 255 255 255)
 
 
 smallSpace =
