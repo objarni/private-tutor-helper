@@ -15,7 +15,7 @@ import Json.Decode as D
 main : Program () Model Msg
 main =
     Browser.element
-        { init = init
+        { init = initialModel
         , update = update
         , view = view
         , subscriptions = subscriptions
@@ -30,20 +30,15 @@ type alias Model =
 
 type Msg
     = ClickMsg
-    | GotText (Result Http.Error String)
+    | GotJson (Result Http.Error (List String))
 
 
-init _ =
+initialModel _ =
     ( { pupils = [ "Alex", "Bertha", "Cecil" ]
       , text = "No response yet"
       }
     , Cmd.none
     )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -55,19 +50,19 @@ update msg { pupils, text } =
               }
             , Http.get
                 { url = "/journal.json"
-                , expect = Http.expectString GotText
+                , expect = Http.expectJson GotJson jsonDecoder
                 }
             )
 
-        GotText result ->
+        GotJson result ->
             case result of
                 Err _ ->
                     ( { pupils = pupils, text = "Http error" }
                     , Cmd.none
                     )
 
-                Ok txt ->
-                    ( { pupils = pupils, text = txt }
+                Ok newPupils ->
+                    ( { pupils = newPupils, text = "Loaded" }
                     , Cmd.none
                     )
 
@@ -75,6 +70,11 @@ update msg { pupils, text } =
 view model =
     Element.layout []
         (mainColumn model)
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
 
 
 mainColumn : Model -> Element Msg
@@ -119,17 +119,9 @@ pupilButton txt =
         )
 
 
-jsonExample =
-    """
-{
-  "Pupils": [ "Alex", "Bertha", "Cecil" ]
-}
-"""
-
-
 jsonDecoder : D.Decoder (List String)
 jsonDecoder =
-    D.field "Pupils" (D.list D.string)
+    D.field "Pupils" (D.list (D.field "Name" D.string))
 
 
 bgBlue =

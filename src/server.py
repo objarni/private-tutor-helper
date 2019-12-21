@@ -1,18 +1,20 @@
 # coding: utf-8
-from bottle import debug, route, run, template, static_file
+import bottle
 
 
 static_paths = ["js/app.js", "index.html", "journal.json"]
 
 
-@route("/<path:re:.*>")
+@bottle.route("/<path:re:.*>")
 def path(path):
     if path in static_paths:
-        return static_file(path, ".")
+    	response = bottle.static_file(path, ".")
+    	response.set_header('Cache-Control', 'public, max-age=5')
+    	return response
     else:
         return "Unknown path"
 
 
-run(
+bottle.run(
     reloader=True, host="localhost", port=8000,
 )
