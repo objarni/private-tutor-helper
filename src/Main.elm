@@ -25,17 +25,19 @@ main =
 type alias Model =
     { pupils : List String
     , text : String
+    , selectedPupil : Maybe String
     }
 
 
 type Msg
-    = ClickMsg
+    = ViewPupil String
     | GotJson (Result Http.Error (List String))
 
 
 initialModel _ =
     ( { pupils = []
       , text = ""
+      , selectedPupil = Nothing
       }
     , Http.get
         { url = "/journal.json"
@@ -45,27 +47,30 @@ initialModel _ =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg { pupils, text } =
+update msg model =
     case msg of
-        ClickMsg ->
-            ( { pupils = pupils ++ [ "Dolph" ]
-              , text = "Added pupil"
+        ViewPupil pupil ->
+            ( { model
+                | selectedPupil = Just pupil
               }
-            , Http.get
-                { url = "/journal.json"
-                , expect = Http.expectJson GotJson jsonDecoder
-                }
+            , Cmd.none
             )
 
         GotJson result ->
             case result of
                 Err _ ->
-                    ( { pupils = pupils, text = "Http error" }
+                    ( { pupils = model.pupils
+                      , text = "Http error"
+                      , selectedPupil = Nothing
+                      }
                     , Cmd.none
                     )
 
                 Ok newPupils ->
-                    ( { pupils = newPupils, text = "Welcome" }
+                    ( { pupils = newPupils
+                      , text = "Welcome"
+                      , selectedPupil = Nothing
+                      }
                     , Cmd.none
                     )
 
@@ -75,15 +80,21 @@ view model =
         (mainColumn model)
 
 
+mainColumn : Model -> Element Msg
+mainColumn model =
+    case model.selectedPupil of
+        Nothing ->
+            Element.column [ Element.centerX, Element.spacing bigSpace ]
+                [ header, listPupils model.pupils, footer model.text ]
+
+        Just pupil ->
+            Element.column [ Element.centerX, Element.spacing bigSpace ]
+                [ header, footer model.text ]
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
-
-
-mainColumn : Model -> Element Msg
-mainColumn model =
-    Element.column [ Element.centerX, Element.spacing bigSpace ]
-        [ header, content model, footer model.text ]
 
 
 footer txt =
@@ -101,14 +112,14 @@ header =
         (Element.text "Lesson Journal")
 
 
-content : Model -> Element Msg
-content model =
+listPupils : List String -> Element Msg
+listPupils pupils =
     Element.wrappedRow [ Element.spacing smallSpace ]
-        (List.map (\txt -> pupilButton txt) model.pupils)
+        (List.map (\txt -> pupilButton txt) pupils)
 
 
 pupilButton : String -> Element Msg
-pupilButton txt =
+pupilButton pupil =
     Element.el
         [ bgBlue
         , fgWhite
@@ -116,8 +127,8 @@ pupilButton txt =
         , Element.padding smallSpace
         ]
         (Input.button []
-            { onPress = Just ClickMsg
-            , label = Element.text txt
+            { onPress = Just (ViewPupil pupil)
+            , label = Element.text pupil
             }
         )
 
