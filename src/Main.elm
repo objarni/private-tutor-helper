@@ -34,10 +34,13 @@ type Msg
 
 
 initialModel _ =
-    ( { pupils = [ "Alex", "Bertha", "Cecil" ]
-      , text = "No response yet"
+    ( { pupils = []
+      , text = ""
       }
-    , Cmd.none
+    , Http.get
+        { url = "/journal.json"
+        , expect = Http.expectJson GotJson jsonDecoder
+        }
     )
 
 
@@ -62,7 +65,7 @@ update msg { pupils, text } =
                     )
 
                 Ok newPupils ->
-                    ( { pupils = newPupils, text = "Loaded" }
+                    ( { pupils = newPupils, text = "Welcome" }
                     , Cmd.none
                     )
 
