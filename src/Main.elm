@@ -85,11 +85,11 @@ mainColumn model =
     case model.selectedPupil of
         Nothing ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header, listPupils model.pupils, footer model.text ]
+                [ header, listPupils model.pupils, infobar model.text ]
 
         Just pupil ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header, footer model.text ]
+                [ header, infobar model.text ]
 
 
 subscriptions : Model -> Sub Msg
@@ -97,19 +97,19 @@ subscriptions model =
     Sub.none
 
 
-footer txt =
+infobar txt =
     Element.el [ Element.centerX ] (Element.text txt)
 
 
 header =
     Element.el
-        [ bgBlue
-        , fgWhite
-        , roundedBorder
-        , Element.padding bigSpace
+        [ Element.padding bigSpace
         , Element.centerX
         ]
-        (Element.text "Lesson Journal")
+        (Element.el
+            [ Element.centerX ]
+            (Element.text "Lesson Journal")
+        )
 
 
 listPupils : List String -> Element Msg
