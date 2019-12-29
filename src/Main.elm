@@ -31,6 +31,7 @@ type alias Model =
 
 type Msg
     = ViewPupil String
+    | ViewPupils
     | GotJson (Result Http.Error (List String))
 
 
@@ -56,6 +57,13 @@ update msg model =
             , Cmd.none
             )
 
+        ViewPupils ->
+            ( { model
+                | selectedPupil = Nothing
+              }
+            , Cmd.none
+            )
+
         GotJson result ->
             case result of
                 Err _ ->
@@ -68,7 +76,7 @@ update msg model =
 
                 Ok newPupils ->
                     ( { pupils = newPupils
-                      , text = "Welcome"
+                      , text = "Pick pupil"
                       , selectedPupil = Nothing
                       }
                     , Cmd.none
@@ -85,11 +93,15 @@ mainColumn model =
     case model.selectedPupil of
         Nothing ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header, listPupils model.pupils, infobar model.text ]
+                [ header "Lesson Journal"
+                , listPupils model.pupils
+                ]
 
         Just pupil ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header, infobar model.text ]
+                [ header ("Lesson Journal for " ++ pupil)
+                , backLink
+                ]
 
 
 subscriptions : Model -> Sub Msg
@@ -97,18 +109,29 @@ subscriptions model =
     Sub.none
 
 
-infobar txt =
-    Element.el [ Element.centerX ] (Element.text txt)
+backLink =
+    Element.el
+        [ bgBlue
+        , fgWhite
+        , roundedBorder
+        , Element.centerX
+        , Element.padding smallSpace
+        ]
+        (Input.button []
+            { onPress = Just ViewPupils
+            , label = Element.text " < Back"
+            }
+        )
 
 
-header =
+header text =
     Element.el
         [ Element.padding bigSpace
         , Element.centerX
         ]
         (Element.el
-            [ Element.centerX ]
-            (Element.text "Lesson Journal")
+            []
+            (Element.text text)
         )
 
 
