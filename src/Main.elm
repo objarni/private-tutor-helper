@@ -113,7 +113,7 @@ viewElement model =
                     pupilsElement model.pupils
 
                 Just pupil ->
-                    pupilPageElement pupil
+                    pupilPageElement (lookup pupil model)
     in
     Element.column
         [ Element.centerX
@@ -124,8 +124,28 @@ viewElement model =
         ]
 
 
-pupilPageElement _ =
-    toMainPageElement
+lookup : String -> Model -> Pupil
+lookup pupilName { pupils } =
+    let
+        rightPupil pupil =
+            pupil.name == pupilName
+
+        filtered =
+            List.filter rightPupil pupils
+    in
+    case filtered of
+        [ x ] ->
+            x
+
+        _ ->
+            Debug.todo "handle this"
+
+
+pupilPageElement { name, title } =
+    Element.column [ Element.centerX, Element.spacing bigSpace ]
+        [ Element.text ("Title: " ++ title)
+        , toMainPageElement
+        ]
 
 
 toMainPageElement =
