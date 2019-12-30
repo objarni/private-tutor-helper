@@ -22,6 +22,7 @@ type alias Model =
 type alias Pupil =
     { name : String
     , title : String
+    , journal : List String
     }
 
 
@@ -141,11 +142,25 @@ lookup pupilName { pupils } =
             Debug.todo "handle this"
 
 
-pupilPageElement { name, title } =
+pupilPageElement { name, title, journal } =
     Element.column [ Element.centerX, Element.spacing bigSpace ]
         [ Element.text ("Title: " ++ title)
+        , lessonsElement journal
         , toMainPageElement
         ]
+
+
+lessonsElement : List String -> Element Msg
+lessonsElement lessons =
+    let
+        lessonElement lesson =
+            buttonElement lesson ViewPupils
+    in
+    Element.wrappedRow [ Element.spacing smallSpace ]
+        (List.map
+            lessonElement
+            lessons
+        )
 
 
 toMainPageElement =
@@ -186,8 +201,12 @@ pupilsElement pupils =
         (List.map (\{ name, title } -> pupilButtonElement name) pupils)
 
 
-pupilButtonElement : String -> Element Msg
 pupilButtonElement pupil =
+    buttonElement pupil (ViewPupil pupil)
+
+
+buttonElement : String -> Msg -> Element Msg
+buttonElement buttonText onPressMsg =
     Element.el
         [ bgBlue
         , fgWhite
@@ -195,8 +214,8 @@ pupilButtonElement pupil =
         , Element.padding smallSpace
         ]
         (Input.button []
-            { onPress = Just (ViewPupil pupil)
-            , label = Element.text pupil
+            { onPress = Just onPressMsg
+            , label = Element.text buttonText
             }
         )
 
@@ -204,10 +223,17 @@ pupilButtonElement pupil =
 jsonDecoder : D.Decoder (List Pupil)
 jsonDecoder =
     D.field "Pupils"
-        (D.list
-            (D.map2 Pupil
-                (D.field "Name" D.string)
-                (D.field "Title" D.string)
+        (D.list pupilDecoder)
+
+
+pupilDecoder : D.Decoder Pupil
+pupilDecoder =
+    D.map3 Pupil
+        (D.field "Name" D.string)
+        (D.field "Title" D.string)
+        (D.field "Journal"
+            (D.list
+                (D.field "Date" D.string)
             )
         )
 
