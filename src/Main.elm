@@ -105,18 +105,22 @@ view model =
 
 mainColumn : Model -> Element Msg
 mainColumn model =
-    case model.selectedPupil of
-        Nothing ->
-            Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header model.statusText
-                , listPupils model.pupils
-                ]
+    let
+        content =
+            case model.selectedPupil of
+                Nothing ->
+                    listPupils model.pupils
 
-        Just pupil ->
-            Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header model.statusText
-                , backLink
-                ]
+                Just pupil ->
+                    backLink
+    in
+    Element.column
+        [ Element.centerX
+        , Element.spacing bigSpace
+        ]
+        [ header model.statusText
+        , content
+        ]
 
 
 subscriptions : Model -> Sub Msg
