@@ -24,7 +24,7 @@ main =
 
 type alias Model =
     { pupils : List String
-    , text : String
+    , statusText : String
     , selectedPupil : Maybe String
     }
 
@@ -37,7 +37,7 @@ type Msg
 
 initialModel _ =
     ( { pupils = []
-      , text = ""
+      , statusText = "Loading pupils..."
       , selectedPupil = Nothing
       }
     , Http.get
@@ -58,29 +58,33 @@ update msg model =
             )
 
         ViewPupils ->
-            ( { model
-                | selectedPupil = Nothing
-              }
+            ( mainModel model "Welcome"
             , Cmd.none
             )
 
         GotJson result ->
             case result of
                 Err _ ->
-                    ( { pupils = model.pupils
-                      , text = "Http error"
-                      , selectedPupil = Nothing
-                      }
+                    ( mainModel model "Http error!"
                     , Cmd.none
                     )
 
                 Ok newPupils ->
-                    ( { pupils = newPupils
-                      , text = "Pick pupil"
-                      , selectedPupil = Nothing
-                      }
+                    ( mainModel
+                        { model
+                            | pupils = newPupils
+                        }
+                        "Welcome"
                     , Cmd.none
                     )
+
+
+mainModel : Model -> String -> Model
+mainModel model text =
+    { model
+        | selectedPupil = Nothing
+        , statusText = text
+    }
 
 
 view model =
@@ -95,18 +99,24 @@ mainColumn model =
             Element.column [ Element.centerX, Element.spacing bigSpace ]
                 [ header "Lesson Journal"
                 , listPupils model.pupils
+                , statusBar model.statusText
                 ]
 
         Just pupil ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
                 [ header ("Lesson Journal for " ++ pupil)
                 , backLink
+                , statusBar model.statusText
                 ]
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
+
+
+statusBar text =
+    Element.text text
 
 
 backLink =
