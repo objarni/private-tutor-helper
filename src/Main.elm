@@ -53,12 +53,13 @@ update msg model =
         ViewPupil pupil ->
             ( { model
                 | selectedPupil = Just pupil
+                , statusText = "Viewing " ++ pupil
               }
             , Cmd.none
             )
 
         ViewPupils ->
-            ( mainModel model "Welcome"
+            ( mainModel model "Viewing pupils"
             , Cmd.none
             )
 
@@ -74,7 +75,7 @@ update msg model =
                         { model
                             | pupils = newPupils
                         }
-                        "Welcome"
+                        "Pupils loaded"
                     , Cmd.none
                     )
 
@@ -92,31 +93,29 @@ view model =
         (mainColumn model)
 
 
+
+-- remind: DRY up this function
+
+
 mainColumn : Model -> Element Msg
 mainColumn model =
     case model.selectedPupil of
         Nothing ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header "Lesson Journal"
+                [ header model.statusText
                 , listPupils model.pupils
-                , statusBar model.statusText
                 ]
 
         Just pupil ->
             Element.column [ Element.centerX, Element.spacing bigSpace ]
-                [ header ("Lesson Journal for " ++ pupil)
+                [ header model.statusText
                 , backLink
-                , statusBar model.statusText
                 ]
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.none
-
-
-statusBar text =
-    Element.text text
 
 
 backLink =
@@ -135,14 +134,20 @@ backLink =
 
 
 header text =
-    Element.el
-        [ Element.padding bigSpace
+    Element.column
+        [ Element.spacing bigSpace
         , Element.centerX
         ]
-        (Element.el
-            []
+        [ Element.el
+            [ Element.centerX
+            , Font.size 30
+            ]
+            (Element.text "Lesson journal")
+        , Element.el
+            [ Element.centerX
+            ]
             (Element.text text)
-        )
+        ]
 
 
 listPupils : List String -> Element Msg
