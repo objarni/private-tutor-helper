@@ -32,10 +32,18 @@ type alias Lesson =
     }
 
 
+type alias PupilId =
+    String
+
+
 type Msg
-    = ViewPupil String
+    = GotJson (Result Http.Error (List Pupil))
     | ViewPupils
-    | GotJson (Result Http.Error (List Pupil))
+    | ViewPupil PupilId
+
+
+
+--| ViewLesson ( String, String )
 
 
 main : Program () Model Msg
@@ -131,7 +139,7 @@ viewElement model =
         ]
 
 
-lookup : String -> Model -> Pupil
+lookup : PupilId -> Model -> Pupil
 lookup pupilName { pupils } =
     let
         rightPupil pupil =
