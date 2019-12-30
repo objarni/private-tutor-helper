@@ -12,6 +12,25 @@ import Http
 import Json.Decode as D
 
 
+type alias Model =
+    { pupils : List Pupil
+    , statusText : String
+    , selectedPupil : Maybe String
+    }
+
+
+type alias Pupil =
+    { name : String
+    , title : String
+    }
+
+
+type Msg
+    = ViewPupil String
+    | ViewPupils
+    | GotJson (Result Http.Error (List Pupil))
+
+
 main : Program () Model Msg
 main =
     Browser.element
@@ -22,23 +41,9 @@ main =
         }
 
 
-type alias Pupil =
-    { name : String
-    , title : String
-    }
-
-
-type alias Model =
-    { pupils : List Pupil
-    , statusText : String
-    , selectedPupil : Maybe String
-    }
-
-
-type Msg
-    = ViewPupil String
-    | ViewPupils
-    | GotJson (Result Http.Error (List Pupil))
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
 
 
 initialModel _ =
@@ -105,30 +110,25 @@ viewElement model =
         content =
             case model.selectedPupil of
                 Nothing ->
-                    listPupils model.pupils
+                    pupilsElement model.pupils
 
                 Just pupil ->
-                    pupilElement pupil
+                    pupilPageElement pupil
     in
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
         ]
-        [ header model.statusText
+        [ headerElement model.statusText
         , content
         ]
 
 
-pupilElement _ =
-    backLink
+pupilPageElement _ =
+    toMainPageElement
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
-
-
-backLink =
+toMainPageElement =
     Element.el
         [ bgBlue
         , fgWhite
@@ -143,7 +143,7 @@ backLink =
         )
 
 
-header text =
+headerElement text =
     Element.column
         [ Element.spacing bigSpace
         , Element.centerX
@@ -160,14 +160,14 @@ header text =
         ]
 
 
-listPupils : List Pupil -> Element Msg
-listPupils pupils =
+pupilsElement : List Pupil -> Element Msg
+pupilsElement pupils =
     Element.wrappedRow [ Element.spacing smallSpace ]
-        (List.map (\{ name, title } -> pupilButton name) pupils)
+        (List.map (\{ name, title } -> pupilButtonElement name) pupils)
 
 
-pupilButton : String -> Element Msg
-pupilButton pupil =
+pupilButtonElement : String -> Element Msg
+pupilButtonElement pupil =
     Element.el
         [ bgBlue
         , fgWhite
