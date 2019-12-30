@@ -206,8 +206,8 @@ jsonDecoder =
     D.field "Pupils"
         (D.list
             (D.map2 Pupil
-                (D.field "name" D.string)
-                (D.field "title" D.string)
+                (D.field "Name" D.string)
+                (D.field "Title" D.string)
             )
         )
 
