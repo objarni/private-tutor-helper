@@ -15,8 +15,14 @@ import Json.Decode as D
 type alias Model =
     { pupils : List Pupil
     , statusText : String
-    , selectedPupil : Maybe String
+    , page : Page
     }
+
+
+type Page
+    = MainPage
+    | PupilPage PupilId
+    | LessonPage LessonId
 
 
 type alias Pupil =
@@ -36,14 +42,21 @@ type alias PupilId =
     String
 
 
+type alias DateString =
+    String
+
+
+type alias LessonId =
+    { pupilId : String
+    , date : String
+    }
+
+
 type Msg
     = GotJson (Result Http.Error (List Pupil))
     | ViewPupils
     | ViewPupil PupilId
-
-
-
---| ViewLesson ( String, String )
+    | ViewLesson LessonId
 
 
 main : Program () Model Msg
@@ -64,7 +77,7 @@ subscriptions model =
 initialModel _ =
     ( { pupils = []
       , statusText = "Loading pupils..."
-      , selectedPupil = Nothing
+      , page = MainPage
       }
     , Http.get
         { url = "/journal.json"
@@ -75,20 +88,11 @@ initialModel _ =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        selectedPupil =
+            findSelectedPupil model
+    in
     case msg of
-        ViewPupil pupil ->
-            ( { model
-                | selectedPupil = Just pupil
-                , statusText = "Viewing " ++ pupil
-              }
-            , Cmd.none
-            )
-
-        ViewPupils ->
-            ( mainModel model "Viewing pupils"
-            , Cmd.none
-            )
-
         GotJson result ->
             case result of
                 Err _ ->
@@ -105,11 +109,49 @@ update msg model =
                     , Cmd.none
                     )
 
+        ViewPupils ->
+            ( mainModel model "Viewing pupils"
+            , Cmd.none
+            )
+
+        ViewPupil pupil ->
+            ( { model
+                | page = PupilPage pupil
+                , statusText = "Viewing " ++ pupil
+              }
+            , Cmd.none
+            )
+
+        ViewLesson { date } ->
+            ( { model
+                | statusText = "Looking at " ++ date
+                , page =
+                    LessonPage
+                        { pupilId = selectedPupil
+                        , date = date
+                        }
+              }
+            , Cmd.none
+            )
+
+
+findSelectedPupil : Model -> PupilId
+findSelectedPupil { pupils, page } =
+    case page of
+        MainPage ->
+            ""
+
+        PupilPage pupilId ->
+            pupilId
+
+        LessonPage { pupilId } ->
+            pupilId
+
 
 mainModel : Model -> String -> Model
 mainModel model text =
     { model
-        | selectedPupil = Nothing
+        | page = MainPage
         , statusText = text
     }
 
@@ -123,12 +165,15 @@ viewElement : Model -> Element Msg
 viewElement model =
     let
         content =
-            case model.selectedPupil of
-                Nothing ->
+            case model.page of
+                MainPage ->
                     pupilsElement model.pupils
 
-                Just pupil ->
-                    pupilPageElement (lookup pupil model)
+                PupilPage pupilId ->
+                    pupilPageElement (lookup pupilId model)
+
+                LessonPage lessonId ->
+                    lessonPageElement
     in
     Element.column
         [ Element.centerX
@@ -137,6 +182,11 @@ viewElement model =
         [ headerElement model.statusText
         , content
         ]
+
+
+lessonPageElement : Element Msg
+lessonPageElement =
+    Element.text "TODO"
 
 
 lookup : PupilId -> Model -> Pupil
@@ -159,18 +209,24 @@ lookup pupilName { pupils } =
 pupilPageElement { name, title, journal } =
     Element.column [ Element.centerX, Element.spacing bigSpace ]
         [ Element.text ("Title: " ++ title)
-        , lessonsElement journal
+        , lessonsElement journal name
         , toMainPageElement
         ]
 
 
-lessonsElement lessons =
+lessonsElement lessons pupilId =
     let
         lessonText { date, thisfocus } =
             String.slice 0 35 (date ++ ": " ++ thisfocus) ++ ".."
 
-        lessonElement lesson =
-            buttonElement (lessonText lesson) ViewPupils
+        lessonElement ({ date } as lesson) =
+            let
+                lessonId =
+                    { pupilId = pupilId
+                    , date = date
+                    }
+            in
+            buttonElement (lessonText lesson) (ViewLesson lessonId)
 
         lessonComparison { date } =
             date
