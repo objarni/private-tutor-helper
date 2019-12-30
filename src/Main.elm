@@ -22,8 +22,14 @@ main =
         }
 
 
+type alias Pupil =
+    { name : String
+    , title : String
+    }
+
+
 type alias Model =
-    { pupils : List String
+    { pupils : List Pupil
     , statusText : String
     , selectedPupil : Maybe String
     }
@@ -32,7 +38,7 @@ type alias Model =
 type Msg
     = ViewPupil String
     | ViewPupils
-    | GotJson (Result Http.Error (List String))
+    | GotJson (Result Http.Error (List Pupil))
 
 
 initialModel _ =
@@ -70,10 +76,10 @@ update msg model =
                     , Cmd.none
                     )
 
-                Ok newPupils ->
+                Ok loadedPupils ->
                     ( mainModel
                         { model
-                            | pupils = newPupils
+                            | pupils = loadedPupils
                         }
                         "Pupils loaded"
                     , Cmd.none
@@ -150,10 +156,10 @@ header text =
         ]
 
 
-listPupils : List String -> Element Msg
+listPupils : List Pupil -> Element Msg
 listPupils pupils =
     Element.wrappedRow [ Element.spacing smallSpace ]
-        (List.map (\txt -> pupilButton txt) pupils)
+        (List.map (\{ name, title } -> pupilButton name) pupils)
 
 
 pupilButton : String -> Element Msg
@@ -171,9 +177,15 @@ pupilButton pupil =
         )
 
 
-jsonDecoder : D.Decoder (List String)
+jsonDecoder : D.Decoder (List Pupil)
 jsonDecoder =
-    D.field "Pupils" (D.list (D.field "Name" D.string))
+    D.field "Pupils"
+        (D.list
+            (D.map2 Pupil
+                (D.field "name" D.string)
+                (D.field "title" D.string)
+            )
+        )
 
 
 bgBlue =
