@@ -189,6 +189,7 @@ lessonPageElement { date, thisfocus } =
     Element.column []
         [ Element.text date
         , Element.text thisfocus
+        , toMainPageElement
         ]
 
 
