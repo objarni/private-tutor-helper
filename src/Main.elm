@@ -170,10 +170,10 @@ viewElement model =
                     pupilsElement model.pupils
 
                 PupilPage pupilId ->
-                    pupilPageElement (lookup pupilId model)
+                    pupilPageElement (lookupPupil pupilId model)
 
                 LessonPage lessonId ->
-                    lessonPageElement
+                    lessonPageElement (lookupLesson lessonId model)
     in
     Element.column
         [ Element.centerX
@@ -184,13 +184,16 @@ viewElement model =
         ]
 
 
-lessonPageElement : Element Msg
-lessonPageElement =
-    Element.text "TODO"
+lessonPageElement : Lesson -> Element Msg
+lessonPageElement { date, thisfocus } =
+    Element.column []
+        [ Element.text date
+        , Element.text thisfocus
+        ]
 
 
-lookup : PupilId -> Model -> Pupil
-lookup pupilName { pupils } =
+lookupPupil : PupilId -> Model -> Pupil
+lookupPupil pupilName { pupils } =
     let
         rightPupil pupil =
             pupil.name == pupilName
@@ -204,6 +207,26 @@ lookup pupilName { pupils } =
 
         _ ->
             Debug.todo "handle this"
+
+
+lookupLesson : LessonId -> Model -> Lesson
+lookupLesson { pupilId, date } ({ pupils } as model) =
+    let
+        rightPupil =
+            lookupPupil pupilId model
+
+        rightLesson lesson =
+            lesson.date == date
+
+        filtered =
+            List.filter rightLesson rightPupil.journal
+    in
+    case List.head filtered of
+        Just x ->
+            x
+
+        Nothing ->
+            Debug.todo "IMPOSSIBLE!"
 
 
 pupilPageElement { name, title, journal } =
