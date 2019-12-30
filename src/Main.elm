@@ -22,7 +22,13 @@ type alias Model =
 type alias Pupil =
     { name : String
     , title : String
-    , journal : List String
+    , journal : List Lesson
+    }
+
+
+type alias Lesson =
+    { date : String
+    , thisfocus : String
     }
 
 
@@ -150,14 +156,19 @@ pupilPageElement { name, title, journal } =
         ]
 
 
-lessonsElement : List String -> Element Msg
 lessonsElement lessons =
     let
+        lessonText { date, thisfocus } =
+            String.slice 0 35 (date ++ ": " ++ thisfocus) ++ ".."
+
         lessonElement lesson =
-            buttonElement lesson ViewPupils
+            buttonElement (lessonText lesson) ViewPupils
+
+        lessonComparison { date } =
+            date
 
         sortDescending =
-            List.sort >> List.reverse
+            List.sortBy lessonComparison >> List.reverse
     in
     Element.column
         [ Element.spacing smallSpace
@@ -217,6 +228,7 @@ buttonElement buttonText onPressMsg =
         [ bgBlue
         , fgWhite
         , roundedBorder
+        , Element.centerX
         , Element.padding smallSpace
         ]
         (Input.button []
@@ -239,9 +251,15 @@ pupilDecoder =
         (D.field "Title" D.string)
         (D.field "Journal"
             (D.list
-                (D.field "Date" D.string)
+                lessonDecoder
             )
         )
+
+
+lessonDecoder =
+    D.map2 Lesson
+        (D.field "Date" D.string)
+        (D.field "ThisFocus" D.string)
 
 
 bgBlue =
