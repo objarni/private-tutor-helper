@@ -278,7 +278,10 @@ headerElement text =
 
 pupilsElement : List Pupil -> Element Msg
 pupilsElement pupils =
-    Element.wrappedRow [ Element.spacing smallSpace ]
+    Element.wrappedRow
+        [ Element.spacing smallSpace
+        , Element.centerX
+        ]
         (List.map (\{ name, title } -> pupilButtonElement name) pupils)
 
 
@@ -292,7 +295,7 @@ buttonElement buttonText onPressMsg =
         [ bgBlue
         , fgWhite
         , roundedBorder
-        , Element.centerX
+        , Element.alignLeft
         , Element.padding smallSpace
         ]
         (Input.button []
