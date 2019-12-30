@@ -155,11 +155,17 @@ lessonsElement lessons =
     let
         lessonElement lesson =
             buttonElement lesson ViewPupils
+
+        sortDescending =
+            List.sort >> List.reverse
     in
-    Element.wrappedRow [ Element.spacing smallSpace ]
+    Element.column
+        [ Element.spacing smallSpace
+        , Element.centerX
+        ]
         (List.map
             lessonElement
-            lessons
+            (sortDescending lessons)
         )
 
 
