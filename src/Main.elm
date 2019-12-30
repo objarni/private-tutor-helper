@@ -96,15 +96,11 @@ mainModel model text =
 
 view model =
     Element.layout []
-        (mainColumn model)
+        (viewElement model)
 
 
-
--- remind: DRY up this function
-
-
-mainColumn : Model -> Element Msg
-mainColumn model =
+viewElement : Model -> Element Msg
+viewElement model =
     let
         content =
             case model.selectedPupil of
@@ -112,7 +108,7 @@ mainColumn model =
                     listPupils model.pupils
 
                 Just pupil ->
-                    backLink
+                    pupilElement pupil
     in
     Element.column
         [ Element.centerX
@@ -121,6 +117,10 @@ mainColumn model =
         [ header model.statusText
         , content
         ]
+
+
+pupilElement _ =
+    backLink
 
 
 subscriptions : Model -> Sub Msg
