@@ -240,18 +240,6 @@ pupilPageElement { name, title, journal } =
 
 lessonsElement lessons pupilId =
     let
-        lessonText { date, thisfocus } =
-            String.slice 0 35 (date ++ ": " ++ thisfocus) ++ ".."
-
-        lessonElement ({ date } as lesson) =
-            let
-                lessonId =
-                    { pupilId = pupilId
-                    , date = date
-                    }
-            in
-            buttonElement (lessonText lesson) (ViewLesson lessonId)
-
         lessonComparison { date } =
             date
 
@@ -263,8 +251,34 @@ lessonsElement lessons pupilId =
         , Element.centerX
         ]
         (List.map
-            lessonElement
+            (lessonElement pupilId)
             (sortDescending lessons)
+        )
+
+
+lessonElement pupilId lesson =
+    let
+        lessonText : Lesson -> String
+        lessonText { date, thisfocus } =
+            String.slice 0 35 (date ++ ": " ++ thisfocus) ++ ".."
+
+        lessonId =
+            { pupilId = pupilId
+            , date = lesson.date
+            }
+    in
+    Element.el
+        [ Border.width 1
+        , Element.padding 9
+        , Element.width (Element.px 350)
+        , Border.rounded 3
+        , Border.color <| Element.rgb255 199 199 199
+        ]
+        (Element.column [ Element.spacing smallSpace ]
+            [ Element.text <| lesson.date
+            , Element.paragraph [] [ Element.text lesson.thisfocus ]
+            , buttonElement "View" (ViewLesson lessonId)
+            ]
         )
 
 
