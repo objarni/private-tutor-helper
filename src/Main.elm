@@ -57,6 +57,7 @@ type Msg
     | ViewPupils
     | ViewPupil PupilId
     | ViewLesson LessonId
+    | CopyLesson LessonId
 
 
 main : Program () Model Msg
@@ -89,8 +90,8 @@ initialModel _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        selectedPupil =
-            findSelectedPupil model
+        selectedPupilId =
+            findSelectedPupilId model
     in
     case msg of
         GotJson result ->
@@ -127,16 +128,47 @@ update msg model =
                 | statusText = "Looking at " ++ date
                 , page =
                     LessonPage
-                        { pupilId = selectedPupil
+                        { pupilId = selectedPupilId
                         , date = date
                         }
               }
             , Cmd.none
             )
 
+        CopyLesson lessonId ->
+            let
+                oldLesson =
+                    lookupLesson lessonId model
 
-findSelectedPupil : Model -> PupilId
-findSelectedPupil { pupils, page } =
+                newLesson : Lesson
+                newLesson =
+                    { oldLesson
+                        | date = "2020-01-01"
+                    }
+
+                oldPupil =
+                    lookupPupil selectedPupilId model
+
+                newJournal =
+                    oldPupil.journal ++ [ newLesson ]
+
+                newPupil =
+                    { oldPupil | journal = newJournal }
+
+                newPupils =
+                    replacePupil model.pupils selectedPupilId newPupil
+
+                newModel =
+                    { model
+                        | pupils = newPupils
+                        , statusText = "Lesson copied"
+                    }
+            in
+            ( newModel, Cmd.none )
+
+
+findSelectedPupilId : Model -> PupilId
+findSelectedPupilId { pupils, page } =
     case page of
         MainPage ->
             ""
@@ -146,6 +178,20 @@ findSelectedPupil { pupils, page } =
 
         LessonPage { pupilId } ->
             pupilId
+
+
+replacePupil : List Pupil -> PupilId -> Pupil -> List Pupil
+replacePupil pupils pupilId newPupil =
+    let
+        replaceInner p =
+            case p.name == pupilId of
+                True ->
+                    newPupil
+
+                False ->
+                    p
+    in
+    List.map replaceInner pupils
 
 
 mainModel : Model -> String -> Model
@@ -277,7 +323,10 @@ lessonElement pupilId lesson =
         (Element.column [ Element.spacing smallSpace ]
             [ Element.text <| lesson.date
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
-            , buttonElement "View" (ViewLesson lessonId)
+            , Element.row [ Element.spacing smallSpace ]
+                [ buttonElement "View" (ViewLesson lessonId)
+                , buttonElement "Copy" (CopyLesson lessonId)
+                ]
             ]
         )
 
