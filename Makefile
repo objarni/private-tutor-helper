@@ -2,9 +2,17 @@
 run:
 	cd output && python3.6 server.py
 
+output:
+	mkdir output
+
 PHONY: build
-build: output/index.html output/js/app.js output/bottle.py output/server.py
+build: output output/index.html output/js/app.js output/bottle.py output/server.py
 	echo Building...
+
+PHONY: clean
+clean:
+	$(RM) output/
+	$(RM) elm-stuff/
 
 output/js/app.js: src/Main.elm
 	elm make src/Main.elm --output=output/js/app.js
