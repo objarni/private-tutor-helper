@@ -16,6 +16,7 @@ type alias Model =
     { pupils : List Pupil
     , statusText : String
     , page : Page
+    , saving : Bool
     }
 
 
@@ -79,6 +80,7 @@ initialModel _ =
     ( { pupils = []
       , statusText = "Loading pupils..."
       , page = MainPage
+      , saving = False
       }
     , Http.get
         { url = "/journal.json"
@@ -162,6 +164,7 @@ update msg model =
                     { model
                         | pupils = newPupils
                         , statusText = "Lesson copied"
+                        , saving = True
                     }
             in
             ( newModel, Cmd.none )
@@ -225,7 +228,7 @@ viewElement model =
         [ Element.centerX
         , Element.spacing bigSpace
         ]
-        [ headerElement model.statusText
+        [ headerElement model.statusText model.saving
         , content
         ]
 
@@ -346,7 +349,17 @@ toMainPageElement =
         )
 
 
-headerElement text =
+headerElement statusText saving =
+    let
+        title =
+            "Lesson Journal"
+                ++ (if saving then
+                        " (saving)"
+
+                    else
+                        ""
+                   )
+    in
     Element.column
         [ Element.spacing bigSpace
         , Element.centerX
@@ -355,11 +368,11 @@ headerElement text =
             [ Element.centerX
             , Font.size 30
             ]
-            (Element.text "Lesson journal")
+            (Element.text title)
         , Element.el
             [ Element.centerX
             ]
-            (Element.text text)
+            (Element.text statusText)
         ]
 
 
