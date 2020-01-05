@@ -54,7 +54,8 @@ type alias LessonId =
 
 
 type Msg
-    = GotJson (Result Http.Error (List Pupil))
+    = GotPupils (Result Http.Error (List Pupil))
+    | PutPupils (Result Http.Error String)
     | ViewPupils
     | ViewPupil PupilId
     | ViewLesson LessonId
@@ -84,7 +85,7 @@ initialModel _ =
       }
     , Http.get
         { url = "/journal.json"
-        , expect = Http.expectJson GotJson jsonDecoder
+        , expect = Http.expectJson GotPupils jsonDecoder
         }
     )
 
@@ -96,7 +97,7 @@ update msg model =
             findSelectedPupilId model
     in
     case msg of
-        GotJson result ->
+        GotPupils result ->
             case result of
                 Err _ ->
                     ( mainModel model "Http error!"
@@ -167,7 +168,16 @@ update msg model =
                         , saving = True
                     }
             in
-            ( newModel, Cmd.none )
+            ( newModel
+            , Http.post
+                { url = "/save"
+                , body = Http.stringBody "application/json" "{\"someJson\": 5}"
+                , expect = Http.expectString PutPupils
+                }
+            )
+
+        PutPupils _ ->
+            ( { model | saving = False }, Cmd.none )
 
 
 findSelectedPupilId : Model -> PupilId
@@ -206,7 +216,18 @@ mainModel model text =
 
 
 view model =
-    Element.layout []
+    let
+        savingText =
+            if model.saving then
+                "Saving..."
+
+            else
+                ""
+    in
+    Element.layout
+        [ Element.inFront
+            (Element.text savingText)
+        ]
         (viewElement model)
 
 
@@ -228,7 +249,7 @@ viewElement model =
         [ Element.centerX
         , Element.spacing bigSpace
         ]
-        [ headerElement model.statusText model.saving
+        [ headerElement model.statusText
         , content
         ]
 
@@ -349,17 +370,7 @@ toMainPageElement =
         )
 
 
-headerElement statusText saving =
-    let
-        title =
-            "Lesson Journal"
-                ++ (if saving then
-                        " (saving)"
-
-                    else
-                        ""
-                   )
-    in
+headerElement statusText =
     Element.column
         [ Element.spacing bigSpace
         , Element.centerX
@@ -368,7 +379,7 @@ headerElement statusText saving =
             [ Element.centerX
             , Font.size 30
             ]
-            (Element.text title)
+            (Element.text "Lesson Journal")
         , Element.el
             [ Element.centerX
             ]

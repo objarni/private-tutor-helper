@@ -1,4 +1,5 @@
 # coding: utf-8
+import time
 import bottle
 
 
@@ -12,11 +13,20 @@ static_paths = [
 @bottle.route("/<path:re:.*>")
 def path(path):
     if path in static_paths:
+        time.sleep(0.4)
         response = bottle.static_file(path, ".")
         response.set_header("Cache-Control", "public, max-age=5")
         return response
     else:
         return "Unknown path"
+
+
+@bottle.route("/save", method="POST")
+def save():
+    with open("journal2.json", "wb") as f:
+        content = bottle.request.body.read()
+        f.write(content)
+    return "SUCCESS"
 
 
 bottle.run(
