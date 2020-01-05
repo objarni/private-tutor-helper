@@ -37,6 +37,9 @@ type alias Pupil =
 type alias Lesson =
     { date : String
     , thisfocus : String
+    , location : String
+    , homework : String
+    , nextfocus : String
     }
 
 
@@ -203,9 +206,12 @@ jsonEncodeModel model =
             E.object
                 [ ( "Date", E.string lesson.date )
                 , ( "ThisFocus", E.string lesson.thisfocus )
+                , ( "Location", E.string lesson.location )
+                , ( "Homework", E.string lesson.homework )
+                , ( "NextFocus", E.string lesson.nextfocus )
                 ]
     in
-    E.encode 4 <| encodePupils model.pupils
+    E.encode 2 <| encodePupils model.pupils
 
 
 findSelectedPupilId : Model -> PupilId
@@ -283,10 +289,13 @@ viewElement model =
 
 
 lessonPageElement : Lesson -> Element Msg
-lessonPageElement { date, thisfocus } =
+lessonPageElement lesson =
     Element.column []
-        [ Element.text date
-        , Element.text thisfocus
+        [ Element.text lesson.date
+        , Element.text lesson.thisfocus
+        , Element.text lesson.location
+        , Element.text lesson.homework
+        , Element.text lesson.nextfocus
         , toMainPageElement
         ]
 
@@ -463,9 +472,12 @@ pupilDecoder =
 
 
 lessonDecoder =
-    D.map2 Lesson
+    D.map5 Lesson
         (D.field "Date" D.string)
         (D.field "ThisFocus" D.string)
+        (D.field "Location" D.string)
+        (D.field "Homework" D.string)
+        (D.field "NextFocus" D.string)
 
 
 bgBlue =
