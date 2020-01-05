@@ -10,6 +10,7 @@ import Html exposing (Html)
 import Html.Events
 import Http
 import Json.Decode as D
+import Json.Encode as E
 
 
 type alias Model =
@@ -171,13 +172,40 @@ update msg model =
             ( newModel
             , Http.post
                 { url = "/save"
-                , body = Http.stringBody "application/json" "{\"someJson\": 5}"
+                , body = Http.stringBody "application/json" <| jsonEncodeModel newModel
                 , expect = Http.expectString PutPupils
                 }
             )
 
         PutPupils _ ->
             ( { model | saving = False }, Cmd.none )
+
+
+jsonEncodeModel : Model -> String
+jsonEncodeModel model =
+    let
+        encodePupils : List Pupil -> E.Value
+        encodePupils pupils =
+            E.object
+                [ ( "Pupils", E.list encodePupil model.pupils )
+                ]
+
+        encodePupil : Pupil -> E.Value
+        encodePupil pupil =
+            E.object
+                [ ( "Name", E.string pupil.name )
+                , ( "Title", E.string pupil.title )
+                , ( "Journal", E.list encodeLesson pupil.journal )
+                ]
+
+        encodeLesson : Lesson -> E.Value
+        encodeLesson lesson =
+            E.object
+                [ ( "Date", E.string lesson.date )
+                , ( "ThisFocus", E.string lesson.thisfocus )
+                ]
+    in
+    E.encode 4 <| encodePupils model.pupils
 
 
 findSelectedPupilId : Model -> PupilId
