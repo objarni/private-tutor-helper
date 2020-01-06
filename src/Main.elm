@@ -13,6 +13,12 @@ import Json.Decode as D
 import Json.Encode as E
 
 
+
+-- @remind split this module up into at least these:
+--  Data.elm : Pupil/Lesson (and subtypes) with json encoders/decoders
+--  Main.elm : Model, view, update, subs., main
+
+
 type alias Model =
     { pupils : List Pupil
     , statusText : String
@@ -23,8 +29,15 @@ type alias Model =
 
 type Page
     = MainPage
+    | AddingPupilPage AddingPupilPageData
     | PupilPage PupilId
     | LessonPage LessonId
+
+
+type alias AddingPupilPageData =
+    { nameIsValid : Bool
+    , name : String
+    }
 
 
 type alias Pupil =
@@ -57,6 +70,10 @@ type alias LessonId =
     }
 
 
+
+-- @remind - rename these for readility
+
+
 type Msg
     = GotPupils (Result Http.Error (List Pupil))
     | PutPupils (Result Http.Error String)
@@ -64,6 +81,9 @@ type Msg
     | ViewPupil PupilId
     | ViewLesson LessonId
     | CopyLesson LessonId
+    | AddPupil
+    | CreatePupil PupilId
+    | SuggestNewPupilName PupilId
 
 
 main : Program () Model Msg
@@ -173,24 +193,71 @@ update msg model =
                     }
             in
             ( newModel
-            , Http.post
-                { url = "/save"
-                , body = Http.stringBody "application/json" <| jsonEncodeModel newModel
-                , expect = Http.expectString PutPupils
-                }
+            , saveCommand newModel.pupils
             )
 
         PutPupils _ ->
             ( { model | saving = False }, Cmd.none )
 
+        AddPupil ->
+            ( { model
+                | page =
+                    AddingPupilPage
+                        { nameIsValid = False
+                        , name = "<fill in name here>"
+                        }
+                , statusText = "Add new pupil"
+              }
+            , Cmd.none
+            )
 
-jsonEncodeModel : Model -> String
-jsonEncodeModel model =
+        SuggestNewPupilName name ->
+            ( { model
+                | page =
+                    AddingPupilPage
+                        { nameIsValid = True
+                        , name = name
+                        }
+              }
+            , Cmd.none
+            )
+
+        CreatePupil pupilId ->
+            let
+                newPupil =
+                    { name = pupilId
+                    , title = ""
+                    , journal = []
+                    }
+
+                newModel =
+                    { model
+                        | pupils = model.pupils ++ [ newPupil ]
+                        , page = MainPage
+                        , statusText = "New pupil added"
+                    }
+            in
+            ( newModel
+            , saveCommand newModel.pupils
+            )
+
+
+saveCommand : List Pupil -> Cmd Msg
+saveCommand pupils =
+    Http.post
+        { url = "/save"
+        , body = Http.stringBody "application/json" <| jsonEncodeModel pupils
+        , expect = Http.expectString PutPupils
+        }
+
+
+jsonEncodeModel : List Pupil -> String
+jsonEncodeModel savePupils =
     let
         encodePupils : List Pupil -> E.Value
         encodePupils pupils =
             E.object
-                [ ( "Pupils", E.list encodePupil model.pupils )
+                [ ( "Pupils", E.list encodePupil savePupils )
                 ]
 
         encodePupil : Pupil -> E.Value
@@ -211,13 +278,16 @@ jsonEncodeModel model =
                 , ( "NextFocus", E.string lesson.nextfocus )
                 ]
     in
-    E.encode 2 <| encodePupils model.pupils
+    E.encode 2 <| encodePupils savePupils
 
 
 findSelectedPupilId : Model -> PupilId
 findSelectedPupilId { pupils, page } =
     case page of
         MainPage ->
+            ""
+
+        AddingPupilPage _ ->
             ""
 
         PupilPage pupilId ->
@@ -273,6 +343,9 @@ viewElement model =
                 MainPage ->
                     pupilsElement model.pupils
 
+                AddingPupilPage pageData ->
+                    addPupilElement pageData
+
                 PupilPage pupilId ->
                     pupilPageElement (lookupPupil pupilId model)
 
@@ -297,6 +370,19 @@ lessonPageElement lesson =
         , Element.text lesson.homework
         , Element.text lesson.nextfocus
         , toMainPageElement
+        ]
+
+
+addPupilElement : AddingPupilPageData -> Element Msg
+addPupilElement pageData =
+    Element.column []
+        [ Input.text []
+            { onChange = \x -> SuggestNewPupilName x
+            , text = pageData.name
+            , placeholder = Nothing
+            , label = Input.labelAbove [] (Element.text "Pupil name")
+            }
+        , buttonElement "Save" <| CreatePupil pageData.name
         ]
 
 
@@ -426,11 +512,14 @@ headerElement statusText =
 
 pupilsElement : List Pupil -> Element Msg
 pupilsElement pupils =
-    Element.wrappedRow
-        [ Element.spacing smallSpace
-        , Element.centerX
+    Element.column []
+        [ Element.wrappedRow
+            [ Element.spacing smallSpace
+            , Element.centerX
+            ]
+            (List.map (\{ name } -> pupilButtonElement name) pupils)
+        , buttonElement "Add Pupil" AddPupil
         ]
-        (List.map (\{ name, title } -> pupilButtonElement name) pupils)
 
 
 pupilButtonElement pupil =
