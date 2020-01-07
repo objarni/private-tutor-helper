@@ -9,14 +9,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Events
 import Http
-import Json.Decode as D
-import Json.Encode as E
-
-
-
--- @remind split this module up into at least these:
---  Data.elm : Pupil/Lesson (and subtypes) with json encoders/decoders
---  Main.elm : Model, view, update, subs., main
+import Pupil exposing (..)
 
 
 type alias Model =
@@ -37,22 +30,6 @@ type Page
 type alias AddingPupilPageData =
     { nameIsValid : Bool
     , name : String
-    }
-
-
-type alias Pupil =
-    { name : String
-    , title : String
-    , journal : List Lesson
-    }
-
-
-type alias Lesson =
-    { date : String
-    , thisfocus : String
-    , location : String
-    , homework : String
-    , nextfocus : String
     }
 
 
@@ -249,36 +226,6 @@ saveCommand pupils =
         , body = Http.stringBody "application/json" <| jsonEncodeModel pupils
         , expect = Http.expectString PutPupils
         }
-
-
-jsonEncodeModel : List Pupil -> String
-jsonEncodeModel savePupils =
-    let
-        encodePupils : List Pupil -> E.Value
-        encodePupils pupils =
-            E.object
-                [ ( "Pupils", E.list encodePupil savePupils )
-                ]
-
-        encodePupil : Pupil -> E.Value
-        encodePupil pupil =
-            E.object
-                [ ( "Name", E.string pupil.name )
-                , ( "Title", E.string pupil.title )
-                , ( "Journal", E.list encodeLesson pupil.journal )
-                ]
-
-        encodeLesson : Lesson -> E.Value
-        encodeLesson lesson =
-            E.object
-                [ ( "Date", E.string lesson.date )
-                , ( "ThisFocus", E.string lesson.thisfocus )
-                , ( "Location", E.string lesson.location )
-                , ( "Homework", E.string lesson.homework )
-                , ( "NextFocus", E.string lesson.nextfocus )
-                ]
-    in
-    E.encode 2 <| encodePupils savePupils
 
 
 findSelectedPupilId : Model -> PupilId
@@ -540,33 +487,6 @@ buttonElement buttonText onPressMsg =
             , label = Element.text buttonText
             }
         )
-
-
-jsonDecoder : D.Decoder (List Pupil)
-jsonDecoder =
-    D.field "Pupils"
-        (D.list pupilDecoder)
-
-
-pupilDecoder : D.Decoder Pupil
-pupilDecoder =
-    D.map3 Pupil
-        (D.field "Name" D.string)
-        (D.field "Title" D.string)
-        (D.field "Journal"
-            (D.list
-                lessonDecoder
-            )
-        )
-
-
-lessonDecoder =
-    D.map5 Lesson
-        (D.field "Date" D.string)
-        (D.field "ThisFocus" D.string)
-        (D.field "Location" D.string)
-        (D.field "Homework" D.string)
-        (D.field "NextFocus" D.string)
 
 
 bgBlue =
