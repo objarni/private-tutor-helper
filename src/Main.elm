@@ -28,7 +28,7 @@ type Page
 
 
 type alias AddingPupilPageData =
-    { nameIsValid : Bool
+    { nameError : Maybe String
     , name : String
     }
 
@@ -153,7 +153,12 @@ update msg model =
                     }
 
                 oldPupil =
-                    lookupPupil selectedPupilId model
+                    case lookupPupil selectedPupilId model of
+                        Just p ->
+                            p
+
+                        Nothing ->
+                            Debug.todo "How to express this better?"
 
                 newJournal =
                     oldPupil.journal ++ [ newLesson ]
@@ -182,7 +187,7 @@ update msg model =
             ( { model
                 | page =
                     AddingPupilPage
-                        { nameIsValid = False
+                        { nameError = Just "Name is empty"
                         , name = ""
                         }
                 , statusText = "Add new pupil"
@@ -191,10 +196,35 @@ update msg model =
             )
 
         SuggestNewPupilName name ->
+            let
+                notEmpty : String -> Bool
+                notEmpty =
+                    not << String.isEmpty
+
+                unique : String -> Bool
+                unique pupilId =
+                    case lookupPupil pupilId model of
+                        Just pupil ->
+                            False
+
+                        Nothing ->
+                            True
+
+                nameError =
+                    case ( notEmpty name, unique name ) of
+                        ( False, _ ) ->
+                            Just "Name is empty"
+
+                        ( _, False ) ->
+                            Just "Name not unique"
+
+                        _ ->
+                            Nothing
+            in
             ( { model
                 | page =
                     AddingPupilPage
-                        { nameIsValid = True
+                        { nameError = nameError
                         , name = name
                         }
               }
@@ -296,7 +326,12 @@ viewElement model =
                     addPupilElement pageData
 
                 PupilPage pupilId ->
-                    pupilPageElement (lookupPupil pupilId model)
+                    case lookupPupil pupilId model of
+                        Just p ->
+                            pupilPageElement p
+
+                        Nothing ->
+                            Debug.todo "Ugh"
 
                 LessonPage lessonId ->
                     lessonPageElement (lookupLesson lessonId model)
@@ -324,6 +359,15 @@ lessonPageElement lesson =
 
 addPupilElement : AddingPupilPageData -> Element Msg
 addPupilElement pageData =
+    let
+        button =
+            case pageData.nameError of
+                Nothing ->
+                    buttonElement "Save" <| CreatePupil pageData.name
+
+                Just error ->
+                    disabledButtonElement "Save"
+    in
     Element.column []
         [ Input.text []
             { onChange = \x -> SuggestNewPupilName x
@@ -331,12 +375,20 @@ addPupilElement pageData =
             , placeholder = Nothing
             , label = Input.labelAbove [] (Element.text "Pupil name")
             }
+        , Element.text
+            (case pageData.nameError of
+                Nothing ->
+                    ""
+
+                Just error ->
+                    "Warning: " ++ error
+            )
         , Element.el [ Element.centerX, Element.padding smallSpace ]
-            (buttonElement "Save" <| CreatePupil pageData.name)
+            button
         ]
 
 
-lookupPupil : PupilId -> Model -> Pupil
+lookupPupil : PupilId -> Model -> Maybe Pupil
 lookupPupil pupilName { pupils } =
     let
         rightPupil pupil =
@@ -347,10 +399,10 @@ lookupPupil pupilName { pupils } =
     in
     case filtered of
         [ x ] ->
-            x
+            Just x
 
         _ ->
-            Debug.todo "data inconsistency!"
+            Nothing
 
 
 lookupLesson : LessonId -> Model -> Lesson
@@ -363,7 +415,12 @@ lookupLesson { pupilId, date } ({ pupils } as model) =
             lesson.date == date
 
         filtered =
-            List.filter rightLesson rightPupil.journal
+            case rightPupil of
+                Just pupil ->
+                    List.filter rightLesson pupil.journal
+
+                Nothing ->
+                    []
     in
     case List.head filtered of
         Just x ->
@@ -493,8 +550,28 @@ buttonElement buttonText onPressMsg =
         )
 
 
+disabledButtonElement : String -> Element Msg
+disabledButtonElement buttonText =
+    Element.el
+        [ bgGray
+        , fgWhite
+        , roundedBorder
+        , Element.alignLeft
+        , Element.padding smallSpace
+        ]
+        (Input.button []
+            { onPress = Nothing
+            , label = Element.text buttonText
+            }
+        )
+
+
 bgBlue =
     Background.color (Element.rgb255 0 140 165)
+
+
+bgGray =
+    Background.color (Element.rgb255 100 100 100)
 
 
 bgRed =
