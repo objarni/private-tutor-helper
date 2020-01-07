@@ -183,7 +183,7 @@ update msg model =
                 | page =
                     AddingPupilPage
                         { nameIsValid = False
-                        , name = "<fill in name here>"
+                        , name = ""
                         }
                 , statusText = "Add new pupil"
               }
@@ -350,7 +350,7 @@ lookupPupil pupilName { pupils } =
             x
 
         _ ->
-            Debug.todo "handle this"
+            Debug.todo "data inconsistency!"
 
 
 lookupLesson : LessonId -> Model -> Lesson
