@@ -54,7 +54,7 @@ type alias LessonId =
 type Msg
     = GotPupils (Result Http.Error (List Pupil))
     | PutPupils (Result Http.Error String)
-    | GotoAddPupil
+    | AddPupil
     | ViewPupils
     | ViewPupil PupilId
     | ViewLesson LessonId
@@ -176,7 +176,7 @@ update msg model =
         PutPupils _ ->
             ( { model | saving = False }, Cmd.none )
 
-        GotoAddPupil ->
+        AddPupil ->
             ( { model
                 | page =
                     AddingPupilPage
@@ -465,7 +465,7 @@ pupilsElement pupils =
             , Element.centerX
             ]
             (List.map (\{ name } -> pupilButtonElement name) pupils)
-        , buttonElement "Add Pupil" GotoAddPupil
+        , buttonElement "Add Pupil" AddPupil
         ]
 
 
