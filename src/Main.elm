@@ -331,7 +331,8 @@ addPupilElement pageData =
             , placeholder = Nothing
             , label = Input.labelAbove [] (Element.text "Pupil name")
             }
-        , buttonElement "Save" <| CreatePupil pageData.name
+        , Element.el [ Element.centerX, Element.padding smallSpace ]
+            (buttonElement "Save" <| CreatePupil pageData.name)
         ]
 
 
@@ -461,13 +462,14 @@ headerElement statusText =
 
 pupilsElement : List Pupil -> Element Msg
 pupilsElement pupils =
-    Element.column []
+    Element.column [ Element.padding bigSpace ]
         [ Element.wrappedRow
             [ Element.spacing smallSpace
             , Element.centerX
             ]
             (List.map (\{ name } -> pupilButtonElement name) pupils)
-        , buttonElement "Add Pupil" GotoPageAddPupil
+        , Element.el [ Element.centerX, Element.padding bigSpace ]
+            (buttonElement "Add Pupil" GotoPageAddPupil)
         ]
 
 
