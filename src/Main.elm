@@ -54,11 +54,11 @@ type alias LessonId =
 type Msg
     = GotPupils (Result Http.Error (List Pupil))
     | PutPupils (Result Http.Error String)
+    | AddPupil
     | ViewPupils
     | ViewPupil PupilId
     | ViewLesson LessonId
     | CopyLesson LessonId
-    | AddPupil
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
 
@@ -86,7 +86,7 @@ initialModel _ =
       }
     , Http.get
         { url = "/journal.json"
-        , expect = Http.expectJson GotPupils jsonDecoder
+        , expect = Http.expectJson GotPupils pupilsFromJSON
         }
     )
 
@@ -223,7 +223,7 @@ saveCommand : List Pupil -> Cmd Msg
 saveCommand pupils =
     Http.post
         { url = "/save"
-        , body = Http.stringBody "application/json" <| jsonEncodeModel pupils
+        , body = Http.stringBody "application/json" <| pupilsToJSONString pupils
         , expect = Http.expectString PutPupils
         }
 
