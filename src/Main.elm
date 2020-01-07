@@ -48,16 +48,18 @@ type alias LessonId =
 
 
 
--- @remind - rename these for readility
+-- Msg name conventions
+-- GotoXYZ --> a navigation message, switching page
+-- Got/PutZYZ --> JSON response messages
 
 
 type Msg
     = GotPupils (Result Http.Error (List Pupil))
     | PutPupils (Result Http.Error String)
-    | AddPupil
-    | ViewPupils
-    | ViewPupil PupilId
-    | ViewLesson LessonId
+    | GotoPageAddPupil
+    | GotoPagePupils
+    | GotoPagePupil PupilId
+    | GotoPageLesson LessonId
     | CopyLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
@@ -114,12 +116,12 @@ update msg model =
                     , Cmd.none
                     )
 
-        ViewPupils ->
+        GotoPagePupils ->
             ( mainModel model "Viewing pupils"
             , Cmd.none
             )
 
-        ViewPupil pupil ->
+        GotoPagePupil pupil ->
             ( { model
                 | page = PupilPage pupil
                 , statusText = "Viewing " ++ pupil
@@ -127,7 +129,7 @@ update msg model =
             , Cmd.none
             )
 
-        ViewLesson { date } ->
+        GotoPageLesson { date } ->
             ( { model
                 | statusText = "Looking at " ++ date
                 , page =
@@ -176,7 +178,7 @@ update msg model =
         PutPupils _ ->
             ( { model | saving = False }, Cmd.none )
 
-        AddPupil ->
+        GotoPageAddPupil ->
             ( { model
                 | page =
                     AddingPupilPage
@@ -418,7 +420,7 @@ lessonElement pupilId lesson =
             [ Element.text <| lesson.date
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
             , Element.row [ Element.spacing smallSpace ]
-                [ buttonElement "View" (ViewLesson lessonId)
+                [ buttonElement "View" (GotoPageLesson lessonId)
                 , buttonElement "Copy" (CopyLesson lessonId)
                 ]
             ]
@@ -434,7 +436,7 @@ toMainPageElement =
         , Element.padding smallSpace
         ]
         (Input.button []
-            { onPress = Just ViewPupils
+            { onPress = Just GotoPagePupils
             , label = Element.text " < Back"
             }
         )
@@ -465,12 +467,12 @@ pupilsElement pupils =
             , Element.centerX
             ]
             (List.map (\{ name } -> pupilButtonElement name) pupils)
-        , buttonElement "Add Pupil" AddPupil
+        , buttonElement "Add Pupil" GotoPageAddPupil
         ]
 
 
 pupilButtonElement pupil =
-    buttonElement pupil (ViewPupil pupil)
+    buttonElement pupil (GotoPagePupil pupil)
 
 
 buttonElement : String -> Msg -> Element Msg
