@@ -238,7 +238,14 @@ update msg model =
                 newPupil =
                     { name = pupilId
                     , title = ""
-                    , journal = []
+                    , journal =
+                        [ { date = model.todaysDate
+                          , thisfocus = "Learn stuff"
+                          , nextfocus = "Learn more stuff"
+                          , homework = "Practice, practice, practice"
+                          , location = "Remote"
+                          }
+                        ]
                     }
 
                 newModel =
