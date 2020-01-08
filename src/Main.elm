@@ -17,6 +17,7 @@ type alias Model =
     , statusText : String
     , page : Page
     , saving : Bool
+    , todaysDate : String
     }
 
 
@@ -65,7 +66,7 @@ type Msg
     | SuggestNewPupilName PupilId
 
 
-main : Program () Model Msg
+main : Program String Model Msg
 main =
     Browser.element
         { init = initialModel
@@ -80,11 +81,12 @@ subscriptions model =
     Sub.none
 
 
-initialModel _ =
+initialModel dateNow =
     ( { pupils = []
       , statusText = "Loading pupils..."
       , page = MainPage
       , saving = False
+      , todaysDate = dateNow
       }
     , Http.get
         { url = "/journal.json"
@@ -149,7 +151,7 @@ update msg model =
                 newLesson : Lesson
                 newLesson =
                     { oldLesson
-                        | date = "2020-01-01"
+                        | date = model.todaysDate
                     }
 
                 oldPupil =

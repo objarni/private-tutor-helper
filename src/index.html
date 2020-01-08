@@ -1,20 +1,35 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="5">
-  <title>Lesson Journal</title>
-  <script src="js/app.js"></script>
+    <meta charset="UTF-8">
+    <title>Lesson Journal</title>
+    <script src="js/app.js"></script>
 </head>
 
 <body>
-<h1><a href="https://github.com/objarni/private-tutor-helper">https://github.com/objarni/private-tutor-helper</a></h1>
+    <div id="elm-app"></div>
+    <script>
 
-<div id="elm-app"></div>
-<script>
+        function formatDate(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
 
-var app = Elm.Main.init({ node: document.getElementById("elm-app") });
+            if (month.length < 2) 
+                month = '0' + month;
+            if (day.length < 2) 
+                day = '0' + day;
 
-</script>
+            return [year, month, day].join('-');
+        }
+
+        var app = Elm.Main.init(
+            { node: document.getElementById("elm-app")
+            , flags: formatDate(Date.now())
+            }
+        );
+
+    </script>
 </body>
 </html>
