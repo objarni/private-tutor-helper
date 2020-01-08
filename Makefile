@@ -15,7 +15,7 @@ clean:
 	$(RM) elm-stuff/
 
 output/js/app.js: src/*.elm
-	elm make src/*.elm --output=output/js/app.js
+	elm make src/Main.elm --output=output/js/app.js
 
 output/index.html: src/index.html
 	cp src/index.html output
