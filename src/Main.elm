@@ -484,14 +484,14 @@ headerElement statusText =
         , Element.centerX
         ]
         [ Element.el
-            [ Element.centerX
-            , Font.size 30
-            , bgRed
-            , fgWhite
-            , roundedBorder
-            , Element.padding bigSpace
-            ]
-            (Input.button [ Element.padding smallSpace ]
+            [ Element.centerX, Element.padding bigSpace ]
+            (Input.button
+                [ Element.padding bigSpace
+                , Font.size 30
+                , bgRed
+                , fgWhite
+                , roundedBorder
+                ]
                 { onPress = Just GotoPagePupils
                 , label = Element.text "Lesson Journal"
                 }
