@@ -315,6 +315,7 @@ mainModel model text =
     }
 
 
+view : Model -> Html Msg
 view model =
     let
         savingText =
@@ -356,6 +357,7 @@ viewElement model =
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
+        , Element.width (Element.maximum containerWidth Element.fill)
         ]
         [ headerElement model.statusText
         , content
@@ -384,9 +386,11 @@ lessonPageElement lesson =
             ]
     in
     Element.table
-        [ Element.width (Element.maximum containerWidth Element.fill)
-        , Element.spacing smallSpace
-        ]
+        ([ Element.width (Element.maximum containerWidth Element.fill)
+         , Element.spacing smallSpace
+         ]
+            ++ lightBorder
+        )
         { data = data
         , columns =
             [ { header = Element.none
@@ -412,7 +416,7 @@ addPupilPageElement pageData =
                 Just error ->
                     disabledButtonElement "Save"
     in
-    Element.column []
+    Element.column [ Element.centerX ]
         [ Input.text []
             { onChange = \x -> SuggestNewPupilName x
             , text = pageData.name
@@ -463,8 +467,12 @@ lookupLesson { pupilId, date } { pupils } =
 
 
 pupilPageElement name { title, journal } =
-    Element.column [ Element.centerX, Element.spacing bigSpace ]
-        [ Element.text ("Title: " ++ title)
+    Element.column
+        [ Element.centerX
+        , Element.spacing bigSpace
+        ]
+        [ Element.el [ Element.centerX ]
+            (Element.text <| "Title: " ++ title)
         , lessonsElement journal name
         ]
 
@@ -477,7 +485,7 @@ lessonsElement lessons pupilId =
         sortDescending =
             List.sortBy lessonComparison >> List.reverse
     in
-    Element.column
+    Element.wrappedRow
         [ Element.spacing smallSpace
         , Element.centerX
         ]
@@ -499,16 +507,15 @@ lessonMasterElement pupilId lesson =
             }
     in
     Element.el
-        [ Border.width 1
-        , Element.padding 9
-        , Element.width (Element.px 350)
-        , Border.rounded 3
-        , Border.color <| Element.rgb255 199 199 199
-        ]
+        (lightBorder
+            ++ [ Element.height <| Element.px 350
+               , Element.width <| Element.px <| round <| containerWidth / 3 - 15
+               ]
+        )
         (Element.column [ Element.spacing smallSpace ]
             [ Element.text <| lesson.date
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
-            , Element.row [ Element.spacing smallSpace ]
+            , Element.row [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
                 , buttonElement "Copy" (CopyLesson lessonId)
                 ]
@@ -608,6 +615,14 @@ bgRed =
 
 fgWhite =
     Font.color (Element.rgb255 255 255 255)
+
+
+lightBorder =
+    [ Border.width 1
+    , Border.rounded 3
+    , Border.color <| Element.rgb255 199 199 199
+    , Element.padding 9
+    ]
 
 
 smallSpace =
