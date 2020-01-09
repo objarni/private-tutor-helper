@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (sandbox)
+import Dict exposing (Dict)
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -13,7 +14,7 @@ import Pupil exposing (..)
 
 
 type alias Model =
-    { pupils : List Pupil
+    { pupils : Dict PupilId Pupil
     , statusText : String
     , page : Page
     , saving : Bool
@@ -34,10 +35,6 @@ type alias AddingPupilPageData =
     }
 
 
-type alias PupilId =
-    String
-
-
 type alias DateString =
     String
 
@@ -55,7 +52,7 @@ type alias LessonId =
 
 
 type Msg
-    = GotPupils (Result Http.Error (List Pupil))
+    = GotPupils (Result Http.Error (Dict PupilId Pupil))
     | PutPupils (Result Http.Error String)
     | GotoPageAddPupil
     | GotoPagePupils
@@ -81,8 +78,9 @@ subscriptions model =
     Sub.none
 
 
+initialModel : String -> ( Model, Cmd Msg )
 initialModel dateNow =
-    ( { pupils = []
+    ( { pupils = Dict.empty
       , statusText = "Loading pupils..."
       , page = MainPage
       , saving = False
@@ -234,10 +232,10 @@ update msg model =
             )
 
         CreatePupil pupilId ->
+            -- @remind case is quite big - separate function?
             let
                 newPupil =
-                    { name = pupilId
-                    , title = ""
+                    { title = ""
                     , journal =
                         [ { date = model.todaysDate
                           , thisfocus = "Learn stuff"
@@ -249,8 +247,13 @@ update msg model =
                     }
 
                 newModel =
+                    let
+                        insertPupil : Maybe Pupil -> Maybe Pupil
+                        insertPupil p =
+                            Just newPupil
+                    in
                     { model
-                        | pupils = model.pupils ++ [ newPupil ]
+                        | pupils = Dict.update pupilId insertPupil model.pupils
                         , page = MainPage
                         , statusText = "New pupil added"
                     }
@@ -260,7 +263,7 @@ update msg model =
             )
 
 
-saveCommand : List Pupil -> Cmd Msg
+saveCommand : Dict PupilId Pupil -> Cmd Msg
 saveCommand pupils =
     Http.post
         { url = "/save"
@@ -285,18 +288,13 @@ findSelectedPupilId { pupils, page } =
             pupilId
 
 
-replacePupil : List Pupil -> PupilId -> Pupil -> List Pupil
+replacePupil : Dict PupilId Pupil -> PupilId -> Pupil -> Dict PupilId Pupil
 replacePupil pupils pupilId newPupil =
     let
-        replaceInner p =
-            case p.name == pupilId of
-                True ->
-                    newPupil
-
-                False ->
-                    p
+        updatePupil pupil =
+            Just newPupil
     in
-    List.map replaceInner pupils
+    Dict.update pupilId updatePupil pupils
 
 
 mainModel : Model -> String -> Model
@@ -337,7 +335,7 @@ viewElement model =
                 PupilPage pupilId ->
                     case lookupPupil pupilId model of
                         Just p ->
-                            pupilPageElement p
+                            pupilPageElement pupilId p
 
                         Nothing ->
                             Debug.todo "Ugh"
@@ -399,32 +397,20 @@ addPupilElement pageData =
 
 lookupPupil : PupilId -> Model -> Maybe Pupil
 lookupPupil pupilName { pupils } =
-    let
-        rightPupil pupil =
-            pupil.name == pupilName
-
-        filtered =
-            List.filter rightPupil pupils
-    in
-    case filtered of
-        [ x ] ->
-            Just x
-
-        _ ->
-            Nothing
+    Dict.get pupilName pupils
 
 
 lookupLesson : LessonId -> Model -> Lesson
-lookupLesson { pupilId, date } ({ pupils } as model) =
+lookupLesson { pupilId, date } { pupils } =
     let
-        rightPupil =
-            lookupPupil pupilId model
+        maybeRightPupil =
+            Dict.get pupilId pupils
 
         rightLesson lesson =
             lesson.date == date
 
         filtered =
-            case rightPupil of
+            case maybeRightPupil of
                 Just pupil ->
                     List.filter rightLesson pupil.journal
 
@@ -439,7 +425,7 @@ lookupLesson { pupilId, date } ({ pupils } as model) =
             Debug.todo "IMPOSSIBLE!"
 
 
-pupilPageElement { name, title, journal } =
+pupilPageElement name { title, journal } =
     Element.column [ Element.centerX, Element.spacing bigSpace ]
         [ Element.text ("Title: " ++ title)
         , lessonsElement journal name
@@ -526,14 +512,18 @@ headerElement statusText =
         ]
 
 
-pupilsElement : List Pupil -> Element Msg
+pupilsElement : Dict PupilId Pupil -> Element Msg
 pupilsElement pupils =
+    let
+        pupilNames =
+            Dict.keys pupils
+    in
     Element.column [ Element.padding bigSpace ]
         [ Element.wrappedRow
             [ Element.spacing smallSpace
             , Element.centerX
             ]
-            (List.map (\{ name } -> pupilButtonElement name) pupils)
+            (List.map (\name -> pupilButtonElement name) pupilNames)
         , Element.el [ Element.centerX, Element.padding bigSpace ]
             (buttonElement "Add Pupil" GotoPageAddPupil)
         ]

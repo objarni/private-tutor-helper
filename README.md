@@ -40,7 +40,7 @@ The previous iteration of this system was a single `journal.json` file structure
 
     make build && make run
 
-.. then surf to http://localhost:8000/journal.html to read and update journal.
+.. then surf to http://localhost:8000/index.html to view and update journal.
 
 
 ### What technologies are used?

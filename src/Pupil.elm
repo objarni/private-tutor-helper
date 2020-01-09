@@ -1,12 +1,23 @@
-module Pupil exposing (Lesson, Pupil, lessonFromJSON, pupilsFromJSON, pupilsToJSONString)
+module Pupil exposing
+    ( Lesson
+    , Pupil
+    , PupilId
+    , lessonFromJSON
+    , pupilsFromJSON
+    , pupilsToJSONString
+    )
 
+import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
 
 
+type alias PupilId =
+    String
+
+
 type alias Pupil =
-    { name : String
-    , title : String
+    { title : String
     , journal : List Lesson
     }
 
@@ -24,16 +35,15 @@ type alias Lesson =
 -- Decoders (JSON -> type)
 
 
-pupilsFromJSON : D.Decoder (List Pupil)
+pupilsFromJSON : D.Decoder (Dict PupilId Pupil)
 pupilsFromJSON =
     D.field "Pupils"
-        (D.list pupilFromJSON)
+        (D.dict pupilFromJSON)
 
 
 pupilFromJSON : D.Decoder Pupil
 pupilFromJSON =
-    D.map3 Pupil
-        (D.field "Name" D.string)
+    D.map2 Pupil
         (D.field "Title" D.string)
         (D.field "Journal"
             (D.list
@@ -55,23 +65,22 @@ lessonFromJSON =
 -- Encoders (type -> JSON)
 
 
-pupilsToJSONString : List Pupil -> String
+pupilsToJSONString : Dict PupilId Pupil -> String
 pupilsToJSONString savePupils =
     E.encode 2 <| pupilsToJSON savePupils
 
 
-pupilsToJSON : List Pupil -> E.Value
+pupilsToJSON : Dict PupilId Pupil -> E.Value
 pupilsToJSON pupils =
     E.object
-        [ ( "Pupils", E.list pupilToJSON pupils )
+        [ ( "Pupils", E.dict identity pupilToJSON pupils )
         ]
 
 
 pupilToJSON : Pupil -> E.Value
 pupilToJSON pupil =
     E.object
-        [ ( "Name", E.string pupil.name )
-        , ( "Title", E.string pupil.title )
+        [ ( "Title", E.string pupil.title )
         , ( "Journal", E.list lessonToJSON pupil.journal )
         ]
 
