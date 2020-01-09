@@ -1,8 +1,8 @@
 module Pupil exposing
-    ( Lesson
+    ( DateString
+    , Lesson
     , Pupil
     , PupilId
-    , lessonFromJSON
     , pupilsFromJSON
     , pupilsToJSONString
     )
@@ -16,15 +16,18 @@ type alias PupilId =
     String
 
 
+type alias DateString =
+    String
+
+
 type alias Pupil =
     { title : String
-    , journal : List Lesson
+    , journal : Dict DateString Lesson
     }
 
 
 type alias Lesson =
-    { date : String
-    , thisfocus : String
+    { thisfocus : String
     , location : String
     , homework : String
     , nextfocus : String
@@ -46,15 +49,14 @@ pupilFromJSON =
     D.map2 Pupil
         (D.field "Title" D.string)
         (D.field "Journal"
-            (D.list
+            (D.dict
                 lessonFromJSON
             )
         )
 
 
 lessonFromJSON =
-    D.map5 Lesson
-        (D.field "Date" D.string)
+    D.map4 Lesson
         (D.field "ThisFocus" D.string)
         (D.field "Location" D.string)
         (D.field "Homework" D.string)
@@ -81,15 +83,14 @@ pupilToJSON : Pupil -> E.Value
 pupilToJSON pupil =
     E.object
         [ ( "Title", E.string pupil.title )
-        , ( "Journal", E.list lessonToJSON pupil.journal )
+        , ( "Journal", E.dict identity lessonToJSON pupil.journal )
         ]
 
 
 lessonToJSON : Lesson -> E.Value
 lessonToJSON lesson =
     E.object
-        [ ( "Date", E.string lesson.date )
-        , ( "ThisFocus", E.string lesson.thisfocus )
+        [ ( "ThisFocus", E.string lesson.thisfocus )
         , ( "Location", E.string lesson.location )
         , ( "Homework", E.string lesson.homework )
         , ( "NextFocus", E.string lesson.nextfocus )

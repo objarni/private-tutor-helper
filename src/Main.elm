@@ -36,10 +36,6 @@ type alias AddingPupilPageData =
     }
 
 
-type alias DateString =
-    String
-
-
 type alias LessonId =
     { pupilId : String
     , date : String
@@ -216,15 +212,6 @@ gotPupilsUpdate model httpResult =
 copyLesson : Model -> LessonId -> Model
 copyLesson model ({ pupilId } as lessonId) =
     let
-        oldLesson =
-            lookupLesson lessonId model
-
-        newLesson : Lesson
-        newLesson =
-            { oldLesson
-                | date = model.todaysDate
-            }
-
         oldPupil =
             case lookupPupil pupilId model of
                 Just p ->
@@ -233,8 +220,11 @@ copyLesson model ({ pupilId } as lessonId) =
                 Nothing ->
                     Debug.todo "How to express this better?"
 
+        insertLesson maybeLesson =
+            lookupLesson lessonId model
+
         newJournal =
-            oldPupil.journal ++ [ newLesson ]
+            Dict.update model.todaysDate insertLesson oldPupil.journal
 
         newPupil =
             { oldPupil | journal = newJournal }
@@ -252,16 +242,20 @@ copyLesson model ({ pupilId } as lessonId) =
 createPupil : PupilId -> Model -> Model
 createPupil pupilId model =
     let
+        insertLesson maybeLesson =
+            Just
+                { thisfocus = "Learn stuff"
+                , nextfocus = "Learn more stuff"
+                , homework = "Practice, practice, practice"
+                , location = "Remote"
+                }
+
+        newJournal =
+            Dict.update model.todaysDate insertLesson Dict.empty
+
         newPupil =
-            { title = ""
-            , journal =
-                [ { date = model.todaysDate
-                  , thisfocus = "Learn stuff"
-                  , nextfocus = "Learn more stuff"
-                  , homework = "Practice, practice, practice"
-                  , location = "Remote"
-                  }
-                ]
+            { title = "Mr Pupil"
+            , journal = newJournal
             }
 
         newModel =
@@ -391,7 +385,12 @@ viewElement model =
                             Debug.todo "Ugh"
 
                 LessonPage lessonId ->
-                    lessonPageElement (lookupLesson lessonId model)
+                    case lookupLesson lessonId model of
+                        Just lesson ->
+                            lessonPageElement lesson
+
+                        Nothing ->
+                            Element.none
 
                 EditLessonPage lessonId ->
                     editLessonPageElement lessonId model.pupils
@@ -488,29 +487,21 @@ lookupPupil pupilName { pupils } =
     Dict.get pupilName pupils
 
 
-lookupLesson : LessonId -> Model -> Lesson
+lookupLesson : LessonId -> Model -> Maybe Lesson
 lookupLesson { pupilId, date } { pupils } =
     let
         maybeRightPupil =
             Dict.get pupilId pupils
 
-        rightLesson lesson =
-            lesson.date == date
-
-        filtered =
+        maybeLesson =
             case maybeRightPupil of
-                Just pupil ->
-                    List.filter rightLesson pupil.journal
-
                 Nothing ->
-                    []
-    in
-    case List.head filtered of
-        Just x ->
-            x
+                    Nothing
 
-        Nothing ->
-            Debug.todo "IMPOSSIBLE!"
+                Just pupil ->
+                    Dict.get date pupil.journal
+    in
+    maybeLesson
 
 
 pupilPageElement name { title, journal } =
@@ -524,33 +515,54 @@ pupilPageElement name { title, journal } =
         ]
 
 
+lessonsElement : Dict String Lesson -> PupilId -> Element Msg
 lessonsElement lessons pupilId =
     let
-        lessonComparison { date } =
-            date
+        lessonList : List String
+        lessonList =
+            Dict.keys lessons
 
+        sortDescending : List String -> List String
         sortDescending =
-            List.sortBy lessonComparison >> List.reverse
+            List.sortBy identity >> List.reverse
+
+        sortedLessonIds =
+            sortDescending lessonList
+
+        makeLessonTuple : DateString -> ( DateString, Lesson )
+        makeLessonTuple dateString =
+            case Dict.get dateString lessons of
+                Just lesson ->
+                    ( dateString, lesson )
+
+                Nothing ->
+                    Debug.todo "wtf"
+
+        sortedLessonTuples =
+            List.map
+                makeLessonTuple
+                sortedLessonIds
     in
     Element.wrappedRow
         [ Element.spacing smallSpace
         , Element.centerX
         ]
         (List.map
-            (lessonMasterElement pupilId)
-            (sortDescending lessons)
+            (\( d, l ) -> lessonMasterElement pupilId l d)
+            sortedLessonTuples
         )
 
 
-lessonMasterElement pupilId lesson =
+lessonMasterElement : PupilId -> Lesson -> DateString -> Element Msg
+lessonMasterElement pupilId lesson date =
     let
         lessonText : Lesson -> String
-        lessonText { date, thisfocus } =
-            String.slice 0 35 (date ++ ": " ++ thisfocus) ++ ".."
+        lessonText { thisfocus } =
+            String.slice 0 35 ("fixme" ++ ": " ++ thisfocus) ++ ".."
 
         lessonId =
             { pupilId = pupilId
-            , date = lesson.date
+            , date = date
             }
     in
     Element.el
@@ -560,7 +572,7 @@ lessonMasterElement pupilId lesson =
                ]
         )
         (Element.column [ Element.spacing smallSpace ]
-            [ Element.text <| lesson.date
+            [ Element.text <| date
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
             , Element.row [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
