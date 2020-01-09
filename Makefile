@@ -9,6 +9,10 @@ PHONY: build
 build: output output/index.html output/js/app.js output/bottle.py output/server.py
 	echo Building...
 
+PHONY: lci
+lci:
+	ls src/* | entr make build
+
 PHONY: clean
 clean:
 	$(RM) output/
