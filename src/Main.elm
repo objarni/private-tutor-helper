@@ -101,7 +101,9 @@ update msg model =
     in
     case msg of
         GotPupils result ->
-            ( gotPupilsUpdate model result, Cmd.none )
+            ( gotPupilsUpdate model result
+            , Cmd.none
+            )
 
         GotoPagePupils ->
             ( mainModel model "Viewing pupils"
@@ -138,7 +140,9 @@ update msg model =
             )
 
         PutPupils _ ->
-            ( { model | saving = False }, Cmd.none )
+            ( { model | saving = False }
+            , Cmd.none
+            )
 
         GotoPageAddPupil ->
             ( { model
@@ -154,29 +158,8 @@ update msg model =
 
         SuggestNewPupilName name ->
             let
-                notEmpty : String -> Bool
-                notEmpty =
-                    not << String.isEmpty
-
-                unique : String -> Bool
-                unique pupilId =
-                    case lookupPupil pupilId model of
-                        Just pupil ->
-                            False
-
-                        Nothing ->
-                            True
-
                 nameError =
-                    case ( notEmpty name, unique name ) of
-                        ( False, _ ) ->
-                            Just "Name is empty"
-
-                        ( _, False ) ->
-                            Just "Name not unique"
-
-                        _ ->
-                            Nothing
+                    validateName name model
             in
             ( { model
                 | page =
@@ -189,31 +172,9 @@ update msg model =
             )
 
         CreatePupil pupilId ->
-            -- @remind case is quite big - separate function?
             let
-                newPupil =
-                    { title = ""
-                    , journal =
-                        [ { date = model.todaysDate
-                          , thisfocus = "Learn stuff"
-                          , nextfocus = "Learn more stuff"
-                          , homework = "Practice, practice, practice"
-                          , location = "Remote"
-                          }
-                        ]
-                    }
-
                 newModel =
-                    let
-                        insertPupil : Maybe Pupil -> Maybe Pupil
-                        insertPupil p =
-                            Just newPupil
-                    in
-                    { model
-                        | pupils = Dict.update pupilId insertPupil model.pupils
-                        , page = MainPage
-                        , statusText = "New pupil added"
-                    }
+                    createPupil pupilId model
             in
             ( newModel
             , savePupilsCommand newModel.pupils
@@ -226,6 +187,7 @@ gotPupilsUpdate model httpResult =
             mainModel model "Http error!"
 
         Ok loadedPupils ->
+            -- for debugging purposes ability to jump to specific page state
             if True then
                 mainModel
                     { model
@@ -275,6 +237,66 @@ copyLesson model ({ pupilId } as lessonId) =
         , statusText = "Lesson copied"
         , saving = True
     }
+
+
+createPupil : PupilId -> Model -> Model
+createPupil pupilId model =
+    let
+        newPupil =
+            { title = ""
+            , journal =
+                [ { date = model.todaysDate
+                  , thisfocus = "Learn stuff"
+                  , nextfocus = "Learn more stuff"
+                  , homework = "Practice, practice, practice"
+                  , location = "Remote"
+                  }
+                ]
+            }
+
+        newModel =
+            let
+                insertPupil : Maybe Pupil -> Maybe Pupil
+                insertPupil p =
+                    Just newPupil
+            in
+            { model
+                | pupils = Dict.update pupilId insertPupil model.pupils
+                , page = MainPage
+                , statusText = "New pupil added"
+            }
+    in
+    newModel
+
+
+validateName : PupilId -> Model -> Maybe String
+validateName name model =
+    let
+        notEmpty : String -> Bool
+        notEmpty =
+            not << String.isEmpty
+
+        unique : String -> Bool
+        unique pupilId =
+            case lookupPupil pupilId model of
+                Just pupil ->
+                    False
+
+                Nothing ->
+                    True
+
+        nameError =
+            case ( notEmpty name, unique name ) of
+                ( False, _ ) ->
+                    Just "Name is empty"
+
+                ( _, False ) ->
+                    Just "Name not unique"
+
+                _ ->
+                    Nothing
+    in
+    nameError
 
 
 savePupilsCommand : Dict PupilId Pupil -> Cmd Msg
