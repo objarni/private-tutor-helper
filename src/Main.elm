@@ -337,10 +337,10 @@ viewElement model =
         content =
             case model.page of
                 MainPage ->
-                    pupilsElement model.pupils
+                    pupilsPageElement model.pupils
 
                 AddingPupilPage pageData ->
-                    addPupilElement pageData
+                    addPupilPageElement pageData
 
                 PupilPage pupilId ->
                     case lookupPupil pupilId model of
@@ -401,8 +401,8 @@ lessonPageElement lesson =
         }
 
 
-addPupilElement : AddingPupilPageData -> Element Msg
-addPupilElement pageData =
+addPupilPageElement : AddingPupilPageData -> Element Msg
+addPupilPageElement pageData =
     let
         button =
             case pageData.nameError of
@@ -482,12 +482,12 @@ lessonsElement lessons pupilId =
         , Element.centerX
         ]
         (List.map
-            (lessonElement pupilId)
+            (lessonMasterElement pupilId)
             (sortDescending lessons)
         )
 
 
-lessonElement pupilId lesson =
+lessonMasterElement pupilId lesson =
     let
         lessonText : Lesson -> String
         lessonText { date, thisfocus } =
@@ -541,8 +541,8 @@ headerElement statusText =
         ]
 
 
-pupilsElement : Dict PupilId Pupil -> Element Msg
-pupilsElement pupils =
+pupilsPageElement : Dict PupilId Pupil -> Element Msg
+pupilsPageElement pupils =
     let
         pupilNames =
             Dict.keys pupils
