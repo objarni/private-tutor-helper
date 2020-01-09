@@ -360,7 +360,6 @@ lessonPageElement lesson =
         , Element.text lesson.location
         , Element.text lesson.homework
         , Element.text lesson.nextfocus
-        , toMainPageElement
         ]
 
 
@@ -429,7 +428,6 @@ pupilPageElement name { title, journal } =
     Element.column [ Element.centerX, Element.spacing bigSpace ]
         [ Element.text ("Title: " ++ title)
         , lessonsElement journal name
-        , toMainPageElement
         ]
 
 
@@ -477,21 +475,6 @@ lessonElement pupilId lesson =
                 , buttonElement "Copy" (CopyLesson lessonId)
                 ]
             ]
-        )
-
-
-toMainPageElement =
-    Element.el
-        [ bgBlue
-        , fgWhite
-        , roundedBorder
-        , Element.centerX
-        , Element.padding smallSpace
-        ]
-        (Input.button []
-            { onPress = Just GotoPagePupils
-            , label = Element.text " < Back"
-            }
         )
 
 
