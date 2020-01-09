@@ -187,7 +187,7 @@ update msg model =
                     }
             in
             ( newModel
-            , saveCommand newModel.pupils
+            , savePupilsCommand newModel.pupils
             )
 
         PutPupils _ ->
@@ -269,12 +269,12 @@ update msg model =
                     }
             in
             ( newModel
-            , saveCommand newModel.pupils
+            , savePupilsCommand newModel.pupils
             )
 
 
-saveCommand : Dict PupilId Pupil -> Cmd Msg
-saveCommand pupils =
+savePupilsCommand : Dict PupilId Pupil -> Cmd Msg
+savePupilsCommand pupils =
     Http.post
         { url = "/save"
         , body = Http.stringBody "application/json" <| pupilsToJSONString pupils

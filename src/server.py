@@ -2,11 +2,12 @@
 import time
 import bottle
 
+JOURNAL_PATH = 'journal.json'
 
 static_paths = [
     "js/app.js",
     "index.html",
-    "journal.json",
+    JOURNAL_PATH,
 ]
 
 
@@ -23,7 +24,7 @@ def path(path):
 
 @bottle.route("/save", method="POST")
 def save():
-    with open("journal2.json", "wb") as f:
+    with open(JOURNAL_PATH, "wb") as f:
         content = bottle.request.body.read()
         f.write(content)
     return "SUCCESS"
