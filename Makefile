@@ -11,7 +11,7 @@ build: output output/index.html output/js/app.js output/bottle.py output/server.
 
 PHONY: lci
 lci:
-	ls src/* | entr make build
+	ls src/* | entr sh -c 'clear && make build'
 
 PHONY: clean
 clean:
