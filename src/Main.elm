@@ -503,8 +503,16 @@ headerElement statusText =
         [ Element.el
             [ Element.centerX
             , Font.size 30
+            , bgRed
+            , fgWhite
+            , roundedBorder
+            , Element.padding bigSpace
             ]
-            (Element.text "Lesson Journal")
+            (Input.button [ Element.padding smallSpace ]
+                { onPress = Just GotoPagePupils
+                , label = Element.text "Lesson Journal"
+                }
+            )
         , Element.el
             [ Element.centerX
             ]
