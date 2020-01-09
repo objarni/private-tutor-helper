@@ -108,13 +108,23 @@ update msg model =
                     )
 
                 Ok loadedPupils ->
-                    ( mainModel
-                        { model
+                    if True then
+                        ( mainModel
+                            { model
+                                | pupils = loadedPupils
+                            }
+                            "Pupils loaded"
+                        , Cmd.none
+                        )
+
+                    else
+                        ( { model
                             | pupils = loadedPupils
-                        }
-                        "Pupils loaded"
-                    , Cmd.none
-                    )
+                            , page = LessonPage { pupilId = "Maria Bylund", date = "2018-07-15" }
+                            , statusText = "Debug landing page"
+                          }
+                        , Cmd.none
+                        )
 
         GotoPagePupils ->
             ( mainModel model "Viewing pupils"
@@ -352,15 +362,46 @@ viewElement model =
         ]
 
 
+type alias LessonProperty =
+    { field : String
+    , value : String
+    }
+
+
 lessonPageElement : Lesson -> Element Msg
 lessonPageElement lesson =
-    Element.column []
-        [ Element.text lesson.date
-        , Element.text lesson.thisfocus
-        , Element.text lesson.location
-        , Element.text lesson.homework
-        , Element.text lesson.nextfocus
+    let
+        data =
+            [ { field = "Date"
+              , value = lesson.date
+              }
+            , { field = "Focus"
+              , value = lesson.thisfocus
+              }
+            , { field = "Next time"
+              , value = lesson.nextfocus
+              }
+            , { field = "Homework"
+              , value = lesson.homework
+              }
+            ]
+    in
+    Element.table
+        [ Element.width (Element.maximum containerWidth Element.fill)
+        , Element.spacing smallSpace
         ]
+        { data = data
+        , columns =
+            [ { header = Element.none
+              , width = Element.px 150
+              , view = \prop -> Element.text prop.field
+              }
+            , { header = Element.none
+              , width = Element.fill
+              , view = \prop -> Element.paragraph [] [ Element.text prop.value ]
+              }
+            ]
+        }
 
 
 addPupilElement : AddingPupilPageData -> Element Msg
@@ -582,3 +623,7 @@ bigSpace =
 
 roundedBorder =
     Border.rounded 10
+
+
+containerWidth =
+    1000
