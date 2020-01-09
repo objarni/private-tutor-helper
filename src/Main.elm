@@ -27,6 +27,7 @@ type Page
     | AddingPupilPage AddingPupilPageData
     | PupilPage PupilId
     | LessonPage LessonId
+    | EditLessonPage LessonId
 
 
 type alias AddingPupilPageData =
@@ -58,6 +59,7 @@ type Msg
     | GotoPagePupils
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
+    | GotoPageEditLesson LessonId
     | CopyLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
@@ -152,6 +154,14 @@ update msg model =
                         , name = ""
                         }
                 , statusText = "Add new pupil"
+              }
+            , Cmd.none
+            )
+
+        GotoPageEditLesson ({ pupilId, date } as lessonId) ->
+            ( { model
+                | page = EditLessonPage lessonId
+                , statusText = "Editing " ++ date ++ " of " ++ pupilId
               }
             , Cmd.none
             )
@@ -323,6 +333,9 @@ findSelectedPupilId { pupils, page } =
         LessonPage { pupilId } ->
             pupilId
 
+        EditLessonPage { pupilId } ->
+            pupilId
+
 
 replacePupil : Dict PupilId Pupil -> PupilId -> Pupil -> Dict PupilId Pupil
 replacePupil pupils pupilId newPupil =
@@ -379,6 +392,9 @@ viewElement model =
 
                 LessonPage lessonId ->
                     lessonPageElement (lookupLesson lessonId model)
+
+                EditLessonPage lessonId ->
+                    editLessonPageElement lessonId model.pupils
     in
     Element.column
         [ Element.centerX
@@ -429,6 +445,11 @@ lessonPageElement lesson =
               }
             ]
         }
+
+
+editLessonPageElement : LessonId -> Dict PupilId Pupil -> Element Msg
+editLessonPageElement lessonId pupils =
+    Element.text "EDIT ELEMENT PAGE"
 
 
 addPupilPageElement : AddingPupilPageData -> Element Msg
@@ -544,6 +565,7 @@ lessonMasterElement pupilId lesson =
             , Element.row [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
                 , buttonElement "Copy" (CopyLesson lessonId)
+                , buttonElement "Edit" (GotoPageEditLesson lessonId)
                 ]
             ]
         )
