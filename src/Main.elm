@@ -141,7 +141,7 @@ update msg model =
 
         GotoPageLesson { date } ->
             ( { model
-                | statusText = "Looking at " ++ date
+                | statusText = "Lesson for " ++ selectedPupilId ++ " at " ++ date
                 , page =
                     LessonPage
                         { pupilId = selectedPupilId
@@ -372,10 +372,7 @@ lessonPageElement : Lesson -> Element Msg
 lessonPageElement lesson =
     let
         data =
-            [ { field = "Date"
-              , value = lesson.date
-              }
-            , { field = "Focus"
+            [ { field = "Focus"
               , value = lesson.thisfocus
               }
             , { field = "Next time"
