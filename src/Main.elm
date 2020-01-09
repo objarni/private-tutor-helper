@@ -101,30 +101,7 @@ update msg model =
     in
     case msg of
         GotPupils result ->
-            case result of
-                Err _ ->
-                    ( mainModel model "Http error!"
-                    , Cmd.none
-                    )
-
-                Ok loadedPupils ->
-                    if True then
-                        ( mainModel
-                            { model
-                                | pupils = loadedPupils
-                            }
-                            "Pupils loaded"
-                        , Cmd.none
-                        )
-
-                    else
-                        ( { model
-                            | pupils = loadedPupils
-                            , page = LessonPage { pupilId = "Maria Bylund", date = "2018-07-15" }
-                            , statusText = "Debug landing page"
-                          }
-                        , Cmd.none
-                        )
+            ( gotPupilsUpdate model result, Cmd.none )
 
         GotoPagePupils ->
             ( mainModel model "Viewing pupils"
@@ -153,38 +130,8 @@ update msg model =
 
         CopyLesson lessonId ->
             let
-                oldLesson =
-                    lookupLesson lessonId model
-
-                newLesson : Lesson
-                newLesson =
-                    { oldLesson
-                        | date = model.todaysDate
-                    }
-
-                oldPupil =
-                    case lookupPupil selectedPupilId model of
-                        Just p ->
-                            p
-
-                        Nothing ->
-                            Debug.todo "How to express this better?"
-
-                newJournal =
-                    oldPupil.journal ++ [ newLesson ]
-
-                newPupil =
-                    { oldPupil | journal = newJournal }
-
-                newPupils =
-                    replacePupil model.pupils selectedPupilId newPupil
-
                 newModel =
-                    { model
-                        | pupils = newPupils
-                        , statusText = "Lesson copied"
-                        , saving = True
-                    }
+                    copyLesson model lessonId
             in
             ( newModel
             , savePupilsCommand newModel.pupils
@@ -271,6 +218,63 @@ update msg model =
             ( newModel
             , savePupilsCommand newModel.pupils
             )
+
+
+gotPupilsUpdate model httpResult =
+    case httpResult of
+        Err _ ->
+            mainModel model "Http error!"
+
+        Ok loadedPupils ->
+            if True then
+                mainModel
+                    { model
+                        | pupils = loadedPupils
+                    }
+                    "Pupils loaded"
+
+            else
+                { model
+                    | pupils = loadedPupils
+                    , page = LessonPage { pupilId = "Maria Bylund", date = "2018-07-15" }
+                    , statusText = "Debug landing page"
+                }
+
+
+copyLesson : Model -> LessonId -> Model
+copyLesson model ({ pupilId } as lessonId) =
+    let
+        oldLesson =
+            lookupLesson lessonId model
+
+        newLesson : Lesson
+        newLesson =
+            { oldLesson
+                | date = model.todaysDate
+            }
+
+        oldPupil =
+            case lookupPupil pupilId model of
+                Just p ->
+                    p
+
+                Nothing ->
+                    Debug.todo "How to express this better?"
+
+        newJournal =
+            oldPupil.journal ++ [ newLesson ]
+
+        newPupil =
+            { oldPupil | journal = newJournal }
+
+        newPupils =
+            replacePupil model.pupils pupilId newPupil
+    in
+    { model
+        | pupils = newPupils
+        , statusText = "Lesson copied"
+        , saving = True
+    }
 
 
 savePupilsCommand : Dict PupilId Pupil -> Cmd Msg
@@ -639,3 +643,8 @@ roundedBorder =
 
 containerWidth =
     1000
+
+
+
+-- @remind move view functions with friends to View.elm?
+--  would possibly need to move Model there too, or 4th module Model
