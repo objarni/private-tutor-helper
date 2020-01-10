@@ -27,7 +27,7 @@ type Page
     | AddingPupilPage AddingPupilPageData
     | PupilPage PupilId
     | LessonPage LessonId
-    | EditLessonPage LessonId
+    | EditLessonPage PupilId DateString Lesson
 
 
 type alias AddingPupilPageData =
@@ -55,7 +55,7 @@ type Msg
     | GotoPagePupils
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
-    | GotoPageEditLesson LessonId
+    | GotoPageEditLesson PupilId DateString Lesson
     | CopyLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
@@ -154,9 +154,9 @@ update msg model =
             , Cmd.none
             )
 
-        GotoPageEditLesson ({ pupilId, date } as lessonId) ->
+        GotoPageEditLesson pupilId date lesson ->
             ( { model
-                | page = EditLessonPage lessonId
+                | page = EditLessonPage pupilId date lesson
                 , statusText = "Editing " ++ date ++ " of " ++ pupilId
               }
             , Cmd.none
@@ -204,7 +204,14 @@ gotPupilsUpdate model httpResult =
             else
                 { model
                     | pupils = loadedPupils
-                    , page = LessonPage { pupilId = "Maria Bylund", date = "2018-07-15" }
+                    , page =
+                        EditLessonPage "Maria Bylund"
+                            "2018-07-15"
+                            { thisfocus = "def, return and argument grokking. functions as small programs. differentiate keywords, builtin functions, std.lib. read column values from .xls file"
+                            , location = "Fastlagsgatan 21"
+                            , homework = "Read Start Trek movie list from .xls file, repeat previous excercise on that data"
+                            , nextfocus = "Read two columns 'until' condition (her application)"
+                            }
                     , statusText = "Debug landing page"
                 }
 
@@ -327,7 +334,7 @@ findSelectedPupilId { pupils, page } =
         LessonPage { pupilId } ->
             pupilId
 
-        EditLessonPage { pupilId } ->
+        EditLessonPage pupilId _ _ ->
             pupilId
 
 
@@ -392,8 +399,8 @@ viewElement model =
                         Nothing ->
                             Element.none
 
-                EditLessonPage lessonId ->
-                    editLessonPageElement lessonId model.pupils
+                EditLessonPage pupilId date lesson ->
+                    editLessonPageElement pupilId date lesson
     in
     Element.column
         [ Element.centerX
@@ -446,9 +453,71 @@ lessonPageElement lesson =
         }
 
 
-editLessonPageElement : LessonId -> Dict PupilId Pupil -> Element Msg
-editLessonPageElement lessonId pupils =
-    Element.text "EDIT ELEMENT PAGE"
+editLessonPageElement : PupilId -> DateString -> Lesson -> Element Msg
+editLessonPageElement pupilId dateString lesson =
+    let
+        fieldInput fieldName fieldValue updateLesson =
+            Input.multiline [ Element.width <| Element.px 600 ]
+                { text = fieldValue
+                , placeholder = Nothing
+                , spellcheck = True
+                , label = Input.labelAbove [] (Element.text fieldName)
+                , onChange = \x -> GotoPageEditLesson pupilId dateString (updateLesson x)
+                }
+    in
+    Element.column [ Element.centerX, Element.spacing smallSpace ]
+        [ fieldInput "Focus" lesson.thisfocus (\x -> { lesson | thisfocus = x })
+        , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
+        , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
+        ]
+
+
+
+--let
+--    data =
+--        [ { field = "Focus"
+--          , value = lesson.thisfocus
+--          }
+--        , { field = "Next time"
+--          , value = lesson.nextfocus
+--          }
+--        , { field = "Homework"
+--          , value = lesson.homework
+--          }
+--        ]
+--    form =
+--        Element.table
+--            ([ Element.width (Element.maximum containerWidth Element.fill)
+--             , Element.spacing smallSpace
+--             ]
+--                ++ lightBorder
+--            )
+--            { data = data
+--            , columns =
+--                [ { header = Element.none
+--                  , width = Element.px 150
+--                  , view = \prop -> Element.text prop.field
+--                  }
+--                , { header = Element.none
+--                  , width = Element.fill
+--                  , view =
+--                        \prop ->
+--                            Element.paragraph []
+--                                [ Input.text []
+--                                    { onChange = \x -> SuggestNewPupilName x
+--                                    , text = prop.value
+--                                    , placeholder = Nothing
+--                                    , label = Input.labelAbove [] (Element.text prop.field)
+--                                    }
+--                                ]
+--                  }
+--                ]
+--            }
+--in
+--Element.column [ Element.centerX ]
+--    [ Element.text <| "Editing " ++ dateString ++ " of " ++ pupilId
+--    , form
+--    ]
 
 
 addPupilPageElement : AddingPupilPageData -> Element Msg
@@ -577,7 +646,7 @@ lessonMasterElement pupilId lesson date =
             , Element.row [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
                 , buttonElement "Copy" (CopyLesson lessonId)
-                , buttonElement "Edit" (GotoPageEditLesson lessonId)
+                , buttonElement "Edit" (GotoPageEditLesson pupilId date lesson)
                 ]
             ]
         )
