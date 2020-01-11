@@ -59,6 +59,7 @@ type Msg
     | CopyLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
+    | SaveLesson PupilId DateString Lesson
 
 
 main : Program String Model Msg
@@ -138,7 +139,10 @@ update msg model =
             )
 
         PutPupils _ ->
-            ( { model | saving = False }
+            ( { model
+                | saving = False
+                , statusText = "Journal saved."
+              }
             , Cmd.none
             )
 
@@ -185,6 +189,43 @@ update msg model =
             ( newModel
             , savePupilsCommand newModel.pupils
             )
+
+        SaveLesson pupilId dateString lesson ->
+            let
+                newModel =
+                    updateLesson pupilId dateString lesson model
+            in
+            ( { newModel
+                | page = MainPage
+                , statusText = "Saving lesson " ++ dateString ++ " of " ++ pupilId ++ "..."
+                , saving = True
+              }
+            , savePupilsCommand newModel.pupils
+            )
+
+
+updateLesson : PupilId -> DateString -> Lesson -> Model -> Model
+updateLesson pupilId dateString lesson model =
+    -- idea: 'recursive thinking'
+    -- top-down. assume we got updated pupils,
+    -- what would we do?
+    case Dict.get pupilId model.pupils of
+        Just oldPupil ->
+            let
+                updatedJournal =
+                    Dict.update dateString (\_ -> Just lesson) oldPupil.journal
+
+                updatedPupil =
+                    { oldPupil | journal = updatedJournal }
+
+                updatedPupils =
+                    Dict.update pupilId (\_ -> Just updatedPupil) model.pupils
+            in
+            { model | pupils = updatedPupils }
+
+        Nothing ->
+            -- @remind this feels wrong
+            model
 
 
 gotPupilsUpdate model httpResult =
@@ -456,19 +497,20 @@ lessonPageElement lesson =
 editLessonPageElement : PupilId -> DateString -> Lesson -> Element Msg
 editLessonPageElement pupilId dateString lesson =
     let
-        fieldInput fieldName fieldValue updateLesson =
+        fieldInput fieldName fieldValue modifyLesson =
             Input.multiline [ Element.width <| Element.px 600 ]
                 { text = fieldValue
                 , placeholder = Nothing
                 , spellcheck = True
                 , label = Input.labelAbove [] (Element.text fieldName)
-                , onChange = \x -> GotoPageEditLesson pupilId dateString (updateLesson x)
+                , onChange = \x -> GotoPageEditLesson pupilId dateString (modifyLesson x)
                 }
     in
     Element.column [ Element.centerX, Element.spacing smallSpace ]
         [ fieldInput "Focus" lesson.thisfocus (\x -> { lesson | thisfocus = x })
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
         , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
+        , buttonElement "Save" (SaveLesson pupilId dateString lesson)
         ]
 
 
