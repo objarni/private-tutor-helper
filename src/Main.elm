@@ -57,6 +57,7 @@ type Msg
     | GotoPageLesson LessonId
     | GotoPageEditLesson PupilId DateString Lesson
     | CopyLesson LessonId
+    | DeleteLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
     | SaveLesson PupilId DateString Lesson
@@ -133,6 +134,16 @@ update msg model =
             let
                 newModel =
                     copyLesson model lessonId
+            in
+            ( newModel
+              -- @remind no save indicator?
+            , savePupilsCommand newModel.pupils
+            )
+
+        DeleteLesson lessonId ->
+            let
+                newModel =
+                    deleteLesson model lessonId
             in
             ( newModel
             , savePupilsCommand newModel.pupils
@@ -287,6 +298,30 @@ copyLesson model ({ pupilId } as lessonId) =
     }
 
 
+deleteLesson : Model -> LessonId -> Model
+deleteLesson model ({ pupilId } as lessonId) =
+    case lookupPupil pupilId model of
+        Just pupil ->
+            let
+                newPupil =
+                    { pupil
+                        | journal =
+                            Dict.remove lessonId.date pupil.journal
+                    }
+
+                newPupils =
+                    replacePupil model.pupils pupilId newPupil
+            in
+            { model
+                | pupils = newPupils
+                , statusText = "Lesson deleted"
+                , saving = True
+            }
+
+        Nothing ->
+            model
+
+
 createPupil : PupilId -> Model -> Model
 createPupil pupilId model =
     let
@@ -408,7 +443,9 @@ view model =
     in
     Element.layout
         [ Element.inFront
-            (Element.text savingText)
+            (Element.el [ fgGray, Font.italic ]
+                (Element.text savingText)
+            )
         ]
         (viewElement model)
 
@@ -506,11 +543,19 @@ editLessonPageElement pupilId dateString lesson =
                 , onChange = \x -> GotoPageEditLesson pupilId dateString (modifyLesson x)
                 }
     in
-    Element.column [ Element.centerX, Element.spacing smallSpace ]
+    Element.column
+        [ Element.centerX
+        , Element.spacing smallSpace
+        , Element.padding bigSpace
+        ]
         [ fieldInput "Focus" lesson.thisfocus (\x -> { lesson | thisfocus = x })
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
         , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
-        , buttonElement "Save" (SaveLesson pupilId dateString lesson)
+        , Element.el [ Element.centerX ]
+            (buttonElement
+                "Save"
+                (SaveLesson pupilId dateString lesson)
+            )
         ]
 
 
@@ -685,10 +730,11 @@ lessonMasterElement pupilId lesson date =
         (Element.column [ Element.spacing smallSpace ]
             [ Element.text <| date
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
-            , Element.row [ Element.alignBottom, Element.spacing smallSpace ]
+            , Element.wrappedRow [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
                 , buttonElement "Copy" (CopyLesson lessonId)
                 , buttonElement "Edit" (GotoPageEditLesson pupilId date lesson)
+                , buttonElement "Delete" (DeleteLesson lessonId)
                 ]
             ]
         )
@@ -778,6 +824,10 @@ bgBlue =
 
 bgGray =
     Background.color (Element.rgb255 100 100 100)
+
+
+fgGray =
+    Font.color (Element.rgb255 100 100 100)
 
 
 bgRed =
