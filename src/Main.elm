@@ -700,9 +700,7 @@ lessonsElement lessons pupilId =
                 sortedLessonIds
     in
     Element.wrappedRow
-        [ Element.spacing smallSpace
-        , Element.centerX
-        ]
+        [ Element.spacing smallSpace ]
         (List.map
             (\( d, l ) -> lessonMasterElement pupilId l d)
             sortedLessonTuples
@@ -746,7 +744,7 @@ headerElement statusText =
         , Element.centerX
         ]
         [ Element.el
-            [ Element.centerX, Element.padding bigSpace ]
+            [ Element.padding bigSpace ]
             (Input.button
                 [ Element.padding bigSpace
                 , Font.size 30
@@ -755,12 +753,13 @@ headerElement statusText =
                 , roundedBorder
                 ]
                 { onPress = Just GotoPagePupils
-                , label = Element.text "Lesson Journal"
+                , label =
+                    Element.el []
+                        (Element.text "Lesson Journal")
                 }
             )
         , Element.el
-            [ Element.centerX
-            ]
+            [ Element.centerX ]
             (Element.text statusText)
         ]
 
@@ -771,7 +770,8 @@ pupilsPageElement pupils =
         pupilNames =
             Dict.keys pupils
     in
-    Element.column [ Element.padding bigSpace ]
+    Element.column
+        [ Element.padding bigSpace, Element.centerX ]
         [ Element.wrappedRow
             [ Element.spacing smallSpace
             , Element.centerX
