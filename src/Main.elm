@@ -36,12 +36,6 @@ type alias AddingPupilPageData =
     }
 
 
-type alias LessonId =
-    { pupilId : String
-    , date : String
-    }
-
-
 
 -- Msg name conventions
 -- GotoXYZ --> a navigation message, switching page
@@ -132,12 +126,16 @@ update msg model =
 
         CopyLesson lessonId ->
             let
-                newModel =
-                    copyLesson model lessonId
+                newPupils =
+                    copyLesson lessonId model.todaysDate model.pupils
             in
-            ( newModel
-              -- @remind no save indicator?
-            , savePupilsCommand newModel.pupils
+            ( { model
+                | pupils = newPupils
+                , statusText = "Lesson copied"
+                , saving = True
+              }
+              -- @remind clean up saving indicators
+            , savePupilsCommand newPupils
             )
 
         DeleteLesson lessonId ->
@@ -259,36 +257,6 @@ gotPupilsUpdate model httpResult =
                             }
                     , statusText = "Debug landing page"
                 }
-
-
-copyLesson : Model -> LessonId -> Model
-copyLesson model ({ pupilId } as lessonId) =
-    let
-        oldPupil =
-            case lookupPupil pupilId model of
-                Just p ->
-                    p
-
-                Nothing ->
-                    Debug.todo "How to express this better?"
-
-        insertLesson maybeLesson =
-            lookupLesson lessonId model
-
-        newJournal =
-            Dict.update model.todaysDate insertLesson oldPupil.journal
-
-        newPupil =
-            { oldPupil | journal = newJournal }
-
-        newPupils =
-            replacePupil model.pupils pupilId newPupil
-    in
-    { model
-        | pupils = newPupils
-        , statusText = "Lesson copied"
-        , saving = True
-    }
 
 
 deleteLesson : Model -> LessonId -> Model

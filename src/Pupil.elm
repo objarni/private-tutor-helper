@@ -2,9 +2,11 @@ module Pupil exposing
     ( DateString
     , EditLessonData
     , Lesson
+    , LessonId
     , Pupil
     , PupilId
     , PupilLookup
+    , copyLesson
     , createPupil
     , pupilsFromJSON
     , pupilsToJSONString
@@ -23,6 +25,12 @@ type alias PupilId =
 
 type alias DateString =
     String
+
+
+type alias LessonId =
+    { pupilId : String
+    , date : String
+    }
 
 
 type alias Pupil =
@@ -172,4 +180,24 @@ updateLesson { pupilId, dateString, lesson } pupils =
 
         Nothing ->
             -- @remind this feels wrong
+            pupils
+
+
+copyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
+copyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
+    case Dict.get pupilId pupils of
+        Just oldPupil ->
+            let
+                oldLesson =
+                    Dict.get date oldPupil.journal
+
+                newJournal =
+                    Dict.update todaysDate (\_ -> oldLesson) oldPupil.journal
+
+                newPupil =
+                    { oldPupil | journal = newJournal }
+            in
+            replacePupil pupils pupilId newPupil
+
+        Nothing ->
             pupils
