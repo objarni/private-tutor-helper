@@ -1,11 +1,15 @@
 module Pupil exposing
     ( DateString
+    , EditLessonData
     , Lesson
     , Pupil
     , PupilId
+    , PupilLookup
+    , createPupil
     , pupilsFromJSON
     , pupilsToJSONString
     , replacePupil
+    , updateLesson
     )
 
 import Dict exposing (Dict)
@@ -27,6 +31,10 @@ type alias Pupil =
     }
 
 
+type alias PupilLookup =
+    Dict PupilId Pupil
+
+
 type alias Lesson =
     { thisfocus : String
     , location : String
@@ -36,10 +44,23 @@ type alias Lesson =
 
 
 
+-- @remind this record feels very 'far away' from
+-- the JSON/pupils data -- better name or other design?
+
+
+type alias EditLessonData =
+    { pupilId : PupilId
+    , dateString : DateString
+    , lesson : Lesson
+    , oldDate : DateString
+    }
+
+
+
 -- Decoders (JSON -> type)
 
 
-pupilsFromJSON : D.Decoder (Dict PupilId Pupil)
+pupilsFromJSON : D.Decoder PupilLookup
 pupilsFromJSON =
     D.field "Pupils"
         (D.dict pupilFromJSON)
@@ -68,12 +89,12 @@ lessonFromJSON =
 -- Encoders (type -> JSON)
 
 
-pupilsToJSONString : Dict PupilId Pupil -> String
+pupilsToJSONString : PupilLookup -> String
 pupilsToJSONString savePupils =
     E.encode 2 <| pupilsToJSON savePupils
 
 
-pupilsToJSON : Dict PupilId Pupil -> E.Value
+pupilsToJSON : PupilLookup -> E.Value
 pupilsToJSON pupils =
     E.object
         [ ( "Pupils", E.dict identity pupilToJSON pupils )
@@ -102,10 +123,53 @@ lessonToJSON lesson =
 -- Operations
 
 
-replacePupil : Dict PupilId Pupil -> PupilId -> Pupil -> Dict PupilId Pupil
+replacePupil : PupilLookup -> PupilId -> Pupil -> PupilLookup
 replacePupil pupils pupilId newPupil =
     let
         updatePupil pupil =
             Just newPupil
     in
     Dict.update pupilId updatePupil pupils
+
+
+createPupil : PupilId -> DateString -> PupilLookup -> PupilLookup
+createPupil pupilId date pupils =
+    let
+        insertLesson maybeLesson =
+            Just
+                { thisfocus = "Learn stuff"
+                , nextfocus = "Learn more stuff"
+                , homework = "Practice, practice, practice"
+                , location = "Remote"
+                }
+
+        newJournal =
+            Dict.update date insertLesson Dict.empty
+
+        newPupil =
+            { title = "Mr Pupil"
+            , journal = newJournal
+            }
+    in
+    Dict.update pupilId (\_ -> Just newPupil) pupils
+
+
+updateLesson : EditLessonData -> PupilLookup -> PupilLookup
+updateLesson { pupilId, dateString, lesson } pupils =
+    case Dict.get pupilId pupils of
+        Just oldPupil ->
+            let
+                updatedJournal =
+                    Dict.update dateString (\_ -> Just lesson) oldPupil.journal
+
+                updatedPupil =
+                    { oldPupil | journal = updatedJournal }
+
+                updatedPupils =
+                    Dict.update pupilId (\_ -> Just updatedPupil) pupils
+            in
+            updatedPupils
+
+        Nothing ->
+            -- @remind this feels wrong
+            pupils

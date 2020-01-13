@@ -14,7 +14,7 @@ import Pupil exposing (..)
 
 
 type alias Model =
-    { pupils : Dict PupilId Pupil
+    { pupils : PupilLookup
     , statusText : String
     , page : Page
     , saving : Bool
@@ -49,7 +49,7 @@ type alias LessonId =
 
 
 type Msg
-    = GotPupils (Result Http.Error (Dict PupilId Pupil))
+    = GotPupils (Result Http.Error PupilLookup)
     | PutPupils (Result Http.Error String)
     | GotoPageAddPupil
     | GotoPagePupils
@@ -61,14 +61,6 @@ type Msg
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
     | SaveLesson EditLessonData
-
-
-type alias EditLessonData =
-    { pupilId : PupilId
-    , dateString : DateString
-    , lesson : Lesson
-    , oldDate : DateString
-    }
 
 
 main : Program String Model Msg
@@ -202,20 +194,28 @@ update msg model =
 
         CreatePupil pupilId ->
             let
-                newModel =
-                    createPupil pupilId model
+                newPupils =
+                    createPupil pupilId model.todaysDate model.pupils
             in
-            ( newModel
-            , savePupilsCommand newModel.pupils
+            ( { model
+                | pupils = newPupils
+                , page = MainPage
+                , statusText = "New pupil added"
+              }
+            , savePupilsCommand newPupils
             )
 
         SaveLesson editLessonData ->
             let
-                newModel =
-                    updateLesson editLessonData model
+                newPupils =
+                    updateLesson editLessonData model.pupils
             in
-            ( { newModel
-                | page = MainPage
+            -- @remind can we reduce number saving = True expressions
+            -- in some typesafe manner? anything using savePupilsCommand
+            -- should basically just have saving = True end of story
+            ( { model
+                | pupils = newPupils
+                , page = MainPage
                 , statusText =
                     "Saving lesson "
                         ++ editLessonData.dateString
@@ -224,32 +224,8 @@ update msg model =
                         ++ "..."
                 , saving = True
               }
-            , savePupilsCommand newModel.pupils
+            , savePupilsCommand newPupils
             )
-
-
-updateLesson : EditLessonData -> Model -> Model
-updateLesson { pupilId, dateString, lesson } model =
-    -- idea: 'recursive thinking'
-    -- top-down. assume we got updated pupils,
-    -- what would we do?
-    case Dict.get pupilId model.pupils of
-        Just oldPupil ->
-            let
-                updatedJournal =
-                    Dict.update dateString (\_ -> Just lesson) oldPupil.journal
-
-                updatedPupil =
-                    { oldPupil | journal = updatedJournal }
-
-                updatedPupils =
-                    Dict.update pupilId (\_ -> Just updatedPupil) model.pupils
-            in
-            { model | pupils = updatedPupils }
-
-        Nothing ->
-            -- @remind this feels wrong
-            model
 
 
 gotPupilsUpdate model httpResult =
@@ -339,40 +315,6 @@ deleteLesson model ({ pupilId } as lessonId) =
             model
 
 
-createPupil : PupilId -> Model -> Model
-createPupil pupilId model =
-    let
-        insertLesson maybeLesson =
-            Just
-                { thisfocus = "Learn stuff"
-                , nextfocus = "Learn more stuff"
-                , homework = "Practice, practice, practice"
-                , location = "Remote"
-                }
-
-        newJournal =
-            Dict.update model.todaysDate insertLesson Dict.empty
-
-        newPupil =
-            { title = "Mr Pupil"
-            , journal = newJournal
-            }
-
-        newModel =
-            let
-                insertPupil : Maybe Pupil -> Maybe Pupil
-                insertPupil p =
-                    Just newPupil
-            in
-            { model
-                | pupils = Dict.update pupilId insertPupil model.pupils
-                , page = MainPage
-                , statusText = "New pupil added"
-            }
-    in
-    newModel
-
-
 validateName : PupilId -> Model -> Maybe String
 validateName name model =
     let
@@ -403,7 +345,7 @@ validateName name model =
     nameError
 
 
-savePupilsCommand : Dict PupilId Pupil -> Cmd Msg
+savePupilsCommand : PupilLookup -> Cmd Msg
 savePupilsCommand pupils =
     Http.post
         { url = "/save"
@@ -797,7 +739,7 @@ headerElement statusText =
         ]
 
 
-pupilsPageElement : Dict PupilId Pupil -> Element Msg
+pupilsPageElement : PupilLookup -> Element Msg
 pupilsPageElement pupils =
     let
         pupilNames =
