@@ -31,6 +31,11 @@ def save():
     return "SUCCESS"
 
 
+@bottle.route("/")
+def root():
+    bottle.redirect("/index.html")
+
+
 bottle.run(
     reloader=True, host="localhost", port=8000,
 )

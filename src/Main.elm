@@ -27,7 +27,7 @@ type Page
     | AddingPupilPage AddingPupilPageData
     | PupilPage PupilId
     | LessonPage LessonId
-    | EditLessonPage PupilId DateString Lesson
+    | EditLessonPage EditLessonData
 
 
 type alias AddingPupilPageData =
@@ -55,12 +55,19 @@ type Msg
     | GotoPagePupils
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
-    | GotoPageEditLesson PupilId DateString Lesson
+    | GotoPageEditLesson EditLessonData
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
-    | SaveLesson PupilId DateString Lesson
+    | SaveLesson EditLessonData
+
+
+type alias EditLessonData =
+    { pupilId : PupilId
+    , dateString : DateString
+    , lesson : Lesson
+    }
 
 
 main : Program String Model Msg
@@ -169,10 +176,10 @@ update msg model =
             , Cmd.none
             )
 
-        GotoPageEditLesson pupilId date lesson ->
+        GotoPageEditLesson ({ pupilId, dateString, lesson } as lessonData) ->
             ( { model
-                | page = EditLessonPage pupilId date lesson
-                , statusText = "Editing " ++ date ++ " of " ++ pupilId
+                | page = EditLessonPage lessonData
+                , statusText = "Editing " ++ dateString ++ " of " ++ pupilId
               }
             , Cmd.none
             )
@@ -201,10 +208,15 @@ update msg model =
             , savePupilsCommand newModel.pupils
             )
 
-        SaveLesson pupilId dateString lesson ->
+        SaveLesson { pupilId, dateString, lesson } ->
             let
                 newModel =
-                    updateLesson pupilId dateString lesson model
+                    updateLesson
+                        { pupilId = pupilId
+                        , dateString = dateString
+                        , lesson = lesson
+                        }
+                        model
             in
             ( { newModel
                 | page = MainPage
@@ -215,8 +227,8 @@ update msg model =
             )
 
 
-updateLesson : PupilId -> DateString -> Lesson -> Model -> Model
-updateLesson pupilId dateString lesson model =
+updateLesson : EditLessonData -> Model -> Model
+updateLesson { pupilId, dateString, lesson } model =
     -- idea: 'recursive thinking'
     -- top-down. assume we got updated pupils,
     -- what would we do?
@@ -257,12 +269,15 @@ gotPupilsUpdate model httpResult =
                 { model
                     | pupils = loadedPupils
                     , page =
-                        EditLessonPage "Maria Bylund"
-                            "2018-07-15"
-                            { thisfocus = "def, return and argument grokking. functions as small programs. differentiate keywords, builtin functions, std.lib. read column values from .xls file"
-                            , location = "Fastlagsgatan 21"
-                            , homework = "Read Start Trek movie list from .xls file, repeat previous excercise on that data"
-                            , nextfocus = "Read two columns 'until' condition (her application)"
+                        EditLessonPage
+                            { pupilId = "Test pupil"
+                            , dateString = "2018-07-15"
+                            , lesson =
+                                { thisfocus = "def, return and argument grokking. functions as small programs. differentiate keywords, builtin functions, std.lib. read column values from .xls file"
+                                , location = ""
+                                , homework = "Read Start Trek movie list from .xls file, repeat previous excercise on that data"
+                                , nextfocus = "Read two columns 'until' condition (her application)"
+                                }
                             }
                     , statusText = "Debug landing page"
                 }
@@ -410,7 +425,7 @@ findSelectedPupilId { pupils, page } =
         LessonPage { pupilId } ->
             pupilId
 
-        EditLessonPage pupilId _ _ ->
+        EditLessonPage { pupilId } ->
             pupilId
 
 
@@ -477,8 +492,12 @@ viewElement model =
                         Nothing ->
                             Element.none
 
-                EditLessonPage pupilId date lesson ->
-                    editLessonPageElement pupilId date lesson
+                EditLessonPage { pupilId, dateString, lesson } ->
+                    editLessonPageElement
+                        { pupilId = pupilId
+                        , dateString = dateString
+                        , lesson = lesson
+                        }
     in
     Element.column
         [ Element.centerX
@@ -531,8 +550,8 @@ lessonPageElement lesson =
         }
 
 
-editLessonPageElement : PupilId -> DateString -> Lesson -> Element Msg
-editLessonPageElement pupilId dateString lesson =
+editLessonPageElement : EditLessonData -> Element Msg
+editLessonPageElement { pupilId, dateString, lesson } =
     let
         fieldInput fieldName fieldValue modifyLesson =
             Input.multiline [ Element.width <| Element.px 600 ]
@@ -540,7 +559,13 @@ editLessonPageElement pupilId dateString lesson =
                 , placeholder = Nothing
                 , spellcheck = True
                 , label = Input.labelAbove [] (Element.text fieldName)
-                , onChange = \x -> GotoPageEditLesson pupilId dateString (modifyLesson x)
+                , onChange =
+                    \x ->
+                        GotoPageEditLesson
+                            { pupilId = pupilId
+                            , dateString = dateString
+                            , lesson = modifyLesson x
+                            }
                 }
     in
     Element.column
@@ -554,7 +579,12 @@ editLessonPageElement pupilId dateString lesson =
         , Element.el [ Element.centerX ]
             (buttonElement
                 "Save"
-                (SaveLesson pupilId dateString lesson)
+                (SaveLesson
+                    { pupilId = pupilId
+                    , dateString = dateString
+                    , lesson = lesson
+                    }
+                )
             )
         ]
 
@@ -731,7 +761,13 @@ lessonMasterElement pupilId lesson date =
             , Element.wrappedRow [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
                 , buttonElement "Copy" (CopyLesson lessonId)
-                , buttonElement "Edit" (GotoPageEditLesson pupilId date lesson)
+                , buttonElement "Edit"
+                    (GotoPageEditLesson
+                        { pupilId = pupilId
+                        , dateString = date
+                        , lesson = lesson
+                        }
+                    )
                 , buttonElement "Delete" (DeleteLesson lessonId)
                 ]
             ]
