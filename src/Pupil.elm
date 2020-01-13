@@ -8,6 +8,7 @@ module Pupil exposing
     , PupilLookup
     , copyLesson
     , createPupil
+    , deleteLesson
     , pupilsFromJSON
     , pupilsToJSONString
     , replacePupil
@@ -196,6 +197,23 @@ copyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
 
                 newPupil =
                     { oldPupil | journal = newJournal }
+            in
+            replacePupil pupils pupilId newPupil
+
+        Nothing ->
+            pupils
+
+
+deleteLesson : LessonId -> PupilLookup -> PupilLookup
+deleteLesson ({ pupilId, date } as lessonId) pupils =
+    case Dict.get pupilId pupils of
+        Just pupil ->
+            let
+                newPupil =
+                    { pupil
+                        | journal =
+                            Dict.remove date pupil.journal
+                    }
             in
             replacePupil pupils pupilId newPupil
 

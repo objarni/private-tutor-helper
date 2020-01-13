@@ -140,11 +140,15 @@ update msg model =
 
         DeleteLesson lessonId ->
             let
-                newModel =
-                    deleteLesson model lessonId
+                newPupils =
+                    deleteLesson lessonId model.pupils
             in
-            ( newModel
-            , savePupilsCommand newModel.pupils
+            ( { model
+                | pupils = newPupils
+                , statusText = "Lesson deleted"
+                , saving = True
+              }
+            , savePupilsCommand newPupils
             )
 
         PutPupils _ ->
@@ -257,30 +261,6 @@ gotPupilsUpdate model httpResult =
                             }
                     , statusText = "Debug landing page"
                 }
-
-
-deleteLesson : Model -> LessonId -> Model
-deleteLesson model ({ pupilId } as lessonId) =
-    case lookupPupil pupilId model of
-        Just pupil ->
-            let
-                newPupil =
-                    { pupil
-                        | journal =
-                            Dict.remove lessonId.date pupil.journal
-                    }
-
-                newPupils =
-                    replacePupil model.pupils pupilId newPupil
-            in
-            { model
-                | pupils = newPupils
-                , statusText = "Lesson deleted"
-                , saving = True
-            }
-
-        Nothing ->
-            model
 
 
 validateName : PupilId -> Model -> Maybe String
