@@ -67,6 +67,7 @@ type alias EditLessonData =
     { pupilId : PupilId
     , dateString : DateString
     , lesson : Lesson
+    , oldDate : DateString
     }
 
 
@@ -208,19 +209,19 @@ update msg model =
             , savePupilsCommand newModel.pupils
             )
 
-        SaveLesson { pupilId, dateString, lesson } ->
+        SaveLesson editLessonData ->
             let
                 newModel =
-                    updateLesson
-                        { pupilId = pupilId
-                        , dateString = dateString
-                        , lesson = lesson
-                        }
-                        model
+                    updateLesson editLessonData model
             in
             ( { newModel
                 | page = MainPage
-                , statusText = "Saving lesson " ++ dateString ++ " of " ++ pupilId ++ "..."
+                , statusText =
+                    "Saving lesson "
+                        ++ editLessonData.dateString
+                        ++ " of "
+                        ++ editLessonData.pupilId
+                        ++ "..."
                 , saving = True
               }
             , savePupilsCommand newModel.pupils
@@ -278,6 +279,7 @@ gotPupilsUpdate model httpResult =
                                 , homework = "Read Start Trek movie list from .xls file, repeat previous excercise on that data"
                                 , nextfocus = "Read two columns 'until' condition (her application)"
                                 }
+                            , oldDate = "2018-07-15"
                             }
                     , statusText = "Debug landing page"
                 }
@@ -429,15 +431,6 @@ findSelectedPupilId { pupils, page } =
             pupilId
 
 
-replacePupil : Dict PupilId Pupil -> PupilId -> Pupil -> Dict PupilId Pupil
-replacePupil pupils pupilId newPupil =
-    let
-        updatePupil pupil =
-            Just newPupil
-    in
-    Dict.update pupilId updatePupil pupils
-
-
 mainModel : Model -> String -> Model
 mainModel model text =
     { model
@@ -492,12 +485,8 @@ viewElement model =
                         Nothing ->
                             Element.none
 
-                EditLessonPage { pupilId, dateString, lesson } ->
-                    editLessonPageElement
-                        { pupilId = pupilId
-                        , dateString = dateString
-                        , lesson = lesson
-                        }
+                EditLessonPage data ->
+                    editLessonPageElement data
     in
     Element.column
         [ Element.centerX
@@ -551,8 +540,10 @@ lessonPageElement lesson =
 
 
 editLessonPageElement : EditLessonData -> Element Msg
-editLessonPageElement { pupilId, dateString, lesson } =
+editLessonPageElement { pupilId, dateString, lesson, oldDate } =
     let
+        -- @remind add date editing field
+        fieldInput : String -> String -> (String -> Lesson) -> Element Msg
         fieldInput fieldName fieldValue modifyLesson =
             Input.multiline [ Element.width <| Element.px 600 ]
                 { text = fieldValue
@@ -565,6 +556,7 @@ editLessonPageElement { pupilId, dateString, lesson } =
                             { pupilId = pupilId
                             , dateString = dateString
                             , lesson = modifyLesson x
+                            , oldDate = dateString
                             }
                 }
     in
@@ -573,7 +565,10 @@ editLessonPageElement { pupilId, dateString, lesson } =
         , Element.spacing smallSpace
         , Element.padding bigSpace
         ]
-        [ fieldInput "Focus" lesson.thisfocus (\x -> { lesson | thisfocus = x })
+        [ fieldInput
+            "Focus"
+            lesson.thisfocus
+            (\x -> { lesson | thisfocus = x })
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
         , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
         , Element.el [ Element.centerX ]
@@ -583,6 +578,7 @@ editLessonPageElement { pupilId, dateString, lesson } =
                     { pupilId = pupilId
                     , dateString = dateString
                     , lesson = lesson
+                    , oldDate = oldDate
                     }
                 )
             )
@@ -766,6 +762,7 @@ lessonMasterElement pupilId lesson date =
                         { pupilId = pupilId
                         , dateString = date
                         , lesson = lesson
+                        , oldDate = date
                         }
                     )
                 , buttonElement "Delete" (DeleteLesson lessonId)

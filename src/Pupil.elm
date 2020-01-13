@@ -5,6 +5,7 @@ module Pupil exposing
     , PupilId
     , pupilsFromJSON
     , pupilsToJSONString
+    , replacePupil
     )
 
 import Dict exposing (Dict)
@@ -95,3 +96,16 @@ lessonToJSON lesson =
         , ( "Homework", E.string lesson.homework )
         , ( "NextFocus", E.string lesson.nextfocus )
         ]
+
+
+
+-- Operations
+
+
+replacePupil : Dict PupilId Pupil -> PupilId -> Pupil -> Dict PupilId Pupil
+replacePupil pupils pupilId newPupil =
+    let
+        updatePupil pupil =
+            Just newPupil
+    in
+    Dict.update pupilId updatePupil pupils
