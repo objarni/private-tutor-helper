@@ -475,54 +475,6 @@ editLessonPageElement { pupilId, dateString, lesson, oldDate } =
         ]
 
 
-
---let
---    data =
---        [ { field = "Focus"
---          , value = lesson.thisfocus
---          }
---        , { field = "Next time"
---          , value = lesson.nextfocus
---          }
---        , { field = "Homework"
---          , value = lesson.homework
---          }
---        ]
---    form =
---        Element.table
---            ([ Element.width (Element.maximum containerWidth Element.fill)
---             , Element.spacing smallSpace
---             ]
---                ++ lightBorder
---            )
---            { data = data
---            , columns =
---                [ { header = Element.none
---                  , width = Element.px 150
---                  , view = \prop -> Element.text prop.field
---                  }
---                , { header = Element.none
---                  , width = Element.fill
---                  , view =
---                        \prop ->
---                            Element.paragraph []
---                                [ Input.text []
---                                    { onChange = \x -> SuggestNewPupilName x
---                                    , text = prop.value
---                                    , placeholder = Nothing
---                                    , label = Input.labelAbove [] (Element.text prop.field)
---                                    }
---                                ]
---                  }
---                ]
---            }
---in
---Element.column [ Element.centerX ]
---    [ Element.text <| "Editing " ++ dateString ++ " of " ++ pupilId
---    , form
---    ]
-
-
 addPupilPageElement : AddingPupilPageData -> Element Msg
 addPupilPageElement pageData =
     let
