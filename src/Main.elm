@@ -716,9 +716,10 @@ buttonElement buttonText onPressMsg =
         , fgWhite
         , roundedBorder
         , Element.alignLeft
-        , Element.padding smallSpace
         ]
-        (Input.button []
+        (Input.button
+            [ Element.padding smallSpace
+            ]
             { onPress = Just onPressMsg
             , label = Element.text buttonText
             }
