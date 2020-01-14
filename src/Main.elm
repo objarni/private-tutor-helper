@@ -129,27 +129,14 @@ update msg model =
                 newPupils =
                     opCopyLesson lessonId model.todaysDate model.pupils
             in
-            ( { model
-                | pupils = newPupils
-                , statusText = "Lesson copied"
-                , saving = True
-              }
-              -- @remind clean up saving indicators
-            , savePupilsCommand newPupils
-            )
+            savePupilsUpdate newPupils model.todaysDate "Lesson copied"
 
         DeleteLesson lessonId ->
             let
                 newPupils =
                     opDeleteLesson lessonId model.pupils
             in
-            ( { model
-                | pupils = newPupils
-                , statusText = "Lesson deleted"
-                , saving = True
-              }
-            , savePupilsCommand newPupils
-            )
+            savePupilsUpdate newPupils model.todaysDate "Lesson deleted"
 
         PutPupils _ ->
             ( { model
@@ -199,35 +186,21 @@ update msg model =
                 newPupils =
                     opCreatePupil pupilId model.todaysDate model.pupils
             in
-            ( { model
-                | pupils = newPupils
-                , page = MainPage
-                , statusText = "New pupil added"
-              }
-            , savePupilsCommand newPupils
-            )
+            savePupilsUpdate newPupils model.todaysDate "New pupil added"
 
         SaveLesson editLessonData ->
             let
                 newPupils =
                     opUpdateLesson editLessonData model.pupils
-            in
-            -- @remind can we reduce number saving = True expressions
-            -- in some typesafe manner? anything using savePupilsCommand
-            -- should basically just have saving = True end of story
-            ( { model
-                | pupils = newPupils
-                , page = MainPage
-                , statusText =
+
+                text =
                     "Saving lesson "
                         ++ editLessonData.dateString
                         ++ " of "
                         ++ editLessonData.pupilId
                         ++ "..."
-                , saving = True
-              }
-            , savePupilsCommand newPupils
-            )
+            in
+            savePupilsUpdate newPupils model.todaysDate text
 
 
 gotPupilsUpdate model httpResult =
@@ -293,13 +266,20 @@ validateName name model =
     nameError
 
 
-savePupilsCommand : PupilLookup -> Cmd Msg
-savePupilsCommand pupils =
-    Http.post
+savePupilsUpdate : PupilLookup -> DateString -> String -> ( Model, Cmd Msg )
+savePupilsUpdate pupils today text =
+    ( { pupils = pupils
+      , saving = True
+      , statusText = text
+      , page = MainPage
+      , todaysDate = today
+      }
+    , Http.post
         { url = "/save"
         , body = Http.stringBody "application/json" <| pupilsToJSONString pupils
         , expect = Http.expectString PutPupils
         }
+    )
 
 
 findSelectedPupilId : Model -> PupilId
