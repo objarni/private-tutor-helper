@@ -127,7 +127,7 @@ update msg model =
         CopyLesson lessonId ->
             let
                 newPupils =
-                    copyLesson lessonId model.todaysDate model.pupils
+                    opCopyLesson lessonId model.todaysDate model.pupils
             in
             ( { model
                 | pupils = newPupils
@@ -141,7 +141,7 @@ update msg model =
         DeleteLesson lessonId ->
             let
                 newPupils =
-                    deleteLesson lessonId model.pupils
+                    opDeleteLesson lessonId model.pupils
             in
             ( { model
                 | pupils = newPupils
@@ -197,7 +197,7 @@ update msg model =
         CreatePupil pupilId ->
             let
                 newPupils =
-                    createPupil pupilId model.todaysDate model.pupils
+                    opCreatePupil pupilId model.todaysDate model.pupils
             in
             ( { model
                 | pupils = newPupils
@@ -210,7 +210,7 @@ update msg model =
         SaveLesson editLessonData ->
             let
                 newPupils =
-                    updateLesson editLessonData model.pupils
+                    opUpdateLesson editLessonData model.pupils
             in
             -- @remind can we reduce number saving = True expressions
             -- in some typesafe manner? anything using savePupilsCommand

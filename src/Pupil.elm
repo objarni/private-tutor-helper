@@ -6,12 +6,12 @@ module Pupil exposing
     , Pupil
     , PupilId
     , PupilLookup
-    , copyLesson
-    , createPupil
-    , deleteLesson
+    , opCopyLesson
+    , opCreatePupil
+    , opDeleteLesson
+    , opUpdateLesson
     , pupilsFromJSON
     , pupilsToJSONString
-    , updateLesson
     )
 
 import Dict exposing (Dict)
@@ -131,8 +131,8 @@ lessonToJSON lesson =
 -- Operations
 
 
-createPupil : PupilId -> DateString -> PupilLookup -> PupilLookup
-createPupil pupilId date pupils =
+opCreatePupil : PupilId -> DateString -> PupilLookup -> PupilLookup
+opCreatePupil pupilId date pupils =
     let
         insertLesson _ =
             Just
@@ -153,29 +153,26 @@ createPupil pupilId date pupils =
     Dict.update pupilId (\_ -> Just newPupil) pupils
 
 
-updateLesson : EditLessonData -> PupilLookup -> PupilLookup
-updateLesson { pupilId, dateString, lesson } pupils =
+opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
+opUpdateLesson { pupilId, dateString, lesson } pupils =
     case Dict.get pupilId pupils of
-        Just oldPupil ->
+        Just pupil ->
             let
                 updatedJournal =
-                    Dict.update dateString (\_ -> Just lesson) oldPupil.journal
+                    Dict.update dateString (\_ -> Just lesson) pupil.journal
 
                 updatedPupil =
-                    { oldPupil | journal = updatedJournal }
-
-                updatedPupils =
-                    Dict.update pupilId (\_ -> Just updatedPupil) pupils
+                    { pupil | journal = updatedJournal }
             in
-            updatedPupils
+            Dict.update pupilId (\_ -> Just updatedPupil) pupils
 
         Nothing ->
             -- @remind this feels wrong
             pupils
 
 
-copyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
-copyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
+opCopyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
+opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
     case Dict.get pupilId pupils of
         Just pupil ->
             let
@@ -194,8 +191,8 @@ copyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
             pupils
 
 
-deleteLesson : LessonId -> PupilLookup -> PupilLookup
-deleteLesson ({ pupilId, date } as lessonId) pupils =
+opDeleteLesson : LessonId -> PupilLookup -> PupilLookup
+opDeleteLesson ({ pupilId, date } as lessonId) pupils =
     case Dict.get pupilId pupils of
         Just pupil ->
             let
