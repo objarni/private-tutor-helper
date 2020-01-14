@@ -11,7 +11,6 @@ module Pupil exposing
     , deleteLesson
     , pupilsFromJSON
     , pupilsToJSONString
-    , replacePupil
     , updateLesson
     )
 
@@ -132,19 +131,10 @@ lessonToJSON lesson =
 -- Operations
 
 
-replacePupil : PupilLookup -> PupilId -> Pupil -> PupilLookup
-replacePupil pupils pupilId newPupil =
-    let
-        updatePupil pupil =
-            Just newPupil
-    in
-    Dict.update pupilId updatePupil pupils
-
-
 createPupil : PupilId -> DateString -> PupilLookup -> PupilLookup
 createPupil pupilId date pupils =
     let
-        insertLesson maybeLesson =
+        insertLesson _ =
             Just
                 { thisfocus = "Learn stuff"
                 , nextfocus = "Learn more stuff"
@@ -187,18 +177,18 @@ updateLesson { pupilId, dateString, lesson } pupils =
 copyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
 copyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
     case Dict.get pupilId pupils of
-        Just oldPupil ->
+        Just pupil ->
             let
                 oldLesson =
-                    Dict.get date oldPupil.journal
+                    Dict.get date pupil.journal
 
                 newJournal =
-                    Dict.update todaysDate (\_ -> oldLesson) oldPupil.journal
+                    Dict.update todaysDate (\_ -> oldLesson) pupil.journal
 
                 newPupil =
-                    { oldPupil | journal = newJournal }
+                    { pupil | journal = newJournal }
             in
-            replacePupil pupils pupilId newPupil
+            Dict.update pupilId (\_ -> Just newPupil) pupils
 
         Nothing ->
             pupils
@@ -215,7 +205,7 @@ deleteLesson ({ pupilId, date } as lessonId) pupils =
                             Dict.remove date pupil.journal
                     }
             in
-            replacePupil pupils pupilId newPupil
+            Dict.update pupilId (\_ -> Just newPupil) pupils
 
         Nothing ->
             pupils
