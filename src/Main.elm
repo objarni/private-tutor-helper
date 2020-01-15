@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (sandbox)
+import Date
 import Dict exposing (Dict)
 import Element exposing (Element)
 import Element.Background as Background
@@ -74,8 +75,17 @@ subscriptions model =
 
 initialModel : String -> ( Model, Cmd Msg )
 initialModel dateNow =
+    let
+        dateString =
+            case Date.fromIsoString "2020-01-12" of
+                Ok date ->
+                    Date.toIsoString (Date.add Date.Days 1 date)
+
+                Err error ->
+                    error
+    in
     ( { pupils = Dict.empty
-      , statusText = "Loading pupils..."
+      , statusText = dateString
       , page = MainPage
       , saving = False
       , todaysDate = dateNow

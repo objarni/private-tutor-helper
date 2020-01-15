@@ -3,7 +3,7 @@ import time
 import bottle
 
 JOURNAL_PATH = "journal.json"
-SLOWDOWN = 0.5
+SLOWDOWN = 1.5
 
 static_paths = [
     "js/app.js",
