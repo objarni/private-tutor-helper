@@ -221,16 +221,9 @@ gotPupilsUpdate model httpResult =
                 { model
                     | pupils = loadedPupils
                     , page =
-                        EditLessonPage
-                            { pupilId = "Test pupil"
-                            , dateString = "2018-07-15"
-                            , lesson =
-                                { thisfocus = "def, return and argument grokking. functions as small programs. differentiate keywords, builtin functions, std.lib. read column values from .xls file"
-                                , location = ""
-                                , homework = "Read Start Trek movie list from .xls file, repeat previous excercise on that data"
-                                , nextfocus = "Read two columns 'until' condition (her application)"
-                                }
-                            , oldDate = "2018-07-15"
+                        LessonPage
+                            { pupilId = "Bertha Babbage"
+                            , date = "2020-01-12"
                             }
                     , statusText = "Debug landing page"
                 }
@@ -389,24 +382,11 @@ lessonPageElement lesson =
               }
             ]
     in
-    Element.table
-        ([ Element.width (Element.maximum containerWidth Element.fill)
-         , Element.spacing smallSpace
-         ]
-            ++ lightBorder
-        )
-        { data = data
-        , columns =
-            [ { header = Element.none
-              , width = Element.px 150
-              , view = \prop -> Element.text prop.field
-              }
-            , { header = Element.none
-              , width = Element.fill
-              , view = \prop -> Element.paragraph [] [ Element.text prop.value ]
-              }
-            ]
-        }
+    Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
+        [ Element.text <| "This lesson: " ++ lesson.thisfocus
+        , Element.text <| "Next lesson: " ++ lesson.nextfocus
+        , Element.text <| "Homework: " ++ lesson.homework
+        ]
 
 
 editLessonPageElement : EditLessonData -> Element Msg
