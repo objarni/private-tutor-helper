@@ -57,6 +57,7 @@ type Msg
     | SuggestNewPupilName PupilId
     | SaveLesson EditLessonData
     | DecrementDate EditLessonData
+    | IncrementDate EditLessonData
 
 
 main : Program String Model Msg
@@ -219,6 +220,22 @@ update msg model =
                     case Date.fromIsoString dateString of
                         Ok date ->
                             Date.toIsoString (Date.add Date.Days -1 date)
+
+                        Err error ->
+                            error
+            in
+            ( { model
+                | page = EditLessonPage { lessonData | dateString = newDate }
+              }
+            , Cmd.none
+            )
+
+        IncrementDate ({ dateString } as lessonData) ->
+            let
+                newDate =
+                    case Date.fromIsoString dateString of
+                        Ok date ->
+                            Date.toIsoString (Date.add Date.Days 1 date)
 
                         Err error ->
                             error
@@ -441,7 +458,7 @@ editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
         , Element.row []
             [ Element.text dateString
             , buttonElement "<" (DecrementDate lessonData)
-            , buttonElement ">" GotoPagePupils
+            , buttonElement ">" (IncrementDate lessonData)
             ]
         , fieldInput
             "Focus"
