@@ -154,15 +154,18 @@ opCreatePupil pupilId date pupils =
 
 
 opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
-opUpdateLesson { pupilId, dateString, lesson } pupils =
+opUpdateLesson { pupilId, dateString, lesson, oldDate } pupils =
     case Dict.get pupilId pupils of
         Just pupil ->
             let
-                updatedJournal =
-                    Dict.update dateString (\_ -> Just lesson) pupil.journal
+                journalWithoutOldLesson =
+                    Dict.remove oldDate pupil.journal
+
+                newJournal =
+                    Dict.update dateString (\_ -> Just lesson) journalWithoutOldLesson
 
                 updatedPupil =
-                    { pupil | journal = updatedJournal }
+                    { pupil | journal = newJournal }
             in
             Dict.update pupilId (\_ -> Just updatedPupil) pupils
 

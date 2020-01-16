@@ -56,6 +56,7 @@ type Msg
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
     | SaveLesson EditLessonData
+    | DecrementDate EditLessonData
 
 
 main : Program String Model Msg
@@ -212,6 +213,22 @@ update msg model =
             in
             savePupilsUpdate newPupils model.todaysDate text
 
+        DecrementDate ({ dateString } as lessonData) ->
+            let
+                newDate =
+                    case Date.fromIsoString dateString of
+                        Ok date ->
+                            Date.toIsoString (Date.add Date.Days -1 date)
+
+                        Err error ->
+                            error
+            in
+            ( { model
+                | page = EditLessonPage { lessonData | dateString = newDate }
+              }
+            , Cmd.none
+            )
+
 
 gotPupilsUpdate model httpResult =
     case httpResult of
@@ -220,7 +237,7 @@ gotPupilsUpdate model httpResult =
 
         Ok loadedPupils ->
             -- for debugging purposes ability to jump to specific page state
-            if True then
+            if False then
                 mainModel
                     { model
                         | pupils = loadedPupils
@@ -230,11 +247,7 @@ gotPupilsUpdate model httpResult =
             else
                 { model
                     | pupils = loadedPupils
-                    , page =
-                        LessonPage
-                            { pupilId = "Bertha Babbage"
-                            , date = "2020-01-12"
-                            }
+                    , page = PupilPage "Bertha Babbage"
                     , statusText = "Debug landing page"
                 }
 
@@ -400,9 +413,8 @@ lessonPageElement lesson =
 
 
 editLessonPageElement : EditLessonData -> Element Msg
-editLessonPageElement { pupilId, dateString, lesson, oldDate } =
+editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
     let
-        -- @remind add date editing field
         fieldInput : String -> String -> (String -> Lesson) -> Element Msg
         fieldInput fieldName fieldValue modifyLesson =
             Input.multiline [ Element.width <| Element.px 600 ]
@@ -425,7 +437,13 @@ editLessonPageElement { pupilId, dateString, lesson, oldDate } =
         , Element.spacing smallSpace
         , Element.padding bigSpace
         ]
-        [ fieldInput
+        [ Element.text "Date"
+        , Element.row []
+            [ Element.text dateString
+            , buttonElement "<" (DecrementDate lessonData)
+            , buttonElement ">" GotoPagePupils
+            ]
+        , fieldInput
             "Focus"
             lesson.thisfocus
             (\x -> { lesson | thisfocus = x })
@@ -577,6 +595,8 @@ lessonMasterElement pupilId lesson date =
                         , oldDate = date
                         }
                     )
+
+                -- @remind do not show Delete if last lesson of pupil!!!
                 , buttonElement "Delete" (DeleteLesson lessonId)
                 ]
             ]
