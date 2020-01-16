@@ -455,7 +455,7 @@ editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
         , Element.padding bigSpace
         ]
         [ Element.text "Date"
-        , Element.row []
+        , Element.row (lightBorder ++ [ Element.spacing smallSpace ])
             [ Element.text dateString
             , buttonElement "<" (DecrementDate lessonData)
             , buttonElement ">" (IncrementDate lessonData)
