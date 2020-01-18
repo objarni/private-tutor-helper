@@ -52,7 +52,6 @@ type Msg
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
     | GotoPageEditLesson EditLessonData
-      -- @remind gray out copy lesson if it is todays date!
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
@@ -359,7 +358,7 @@ viewElement model =
                 PupilPage pupilId ->
                     case lookupPupil pupilId model of
                         Just p ->
-                            pupilPageElement pupilId p
+                            pupilPageElement model.todaysDate pupilId p
 
                         Nothing ->
                             Debug.todo "Ugh"
@@ -535,19 +534,19 @@ lookupLesson { pupilId, date } { pupils } =
     maybeLesson
 
 
-pupilPageElement name { title, journal } =
+pupilPageElement todaysDate name { title, journal } =
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
         ]
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
-        , lessonsElement journal name
+        , lessonsElement todaysDate journal name
         ]
 
 
-lessonsElement : Journal -> PupilId -> Element Msg
-lessonsElement lessons pupilId =
+lessonsElement : DateString -> Journal -> PupilId -> Element Msg
+lessonsElement todaysDate lessons pupilId =
     let
         lessonList : List String
         lessonList =
@@ -577,13 +576,13 @@ lessonsElement lessons pupilId =
     Element.wrappedRow
         [ Element.spacing smallSpace ]
         (List.map
-            (\( d, l ) -> lessonMasterElement pupilId lessons l d)
+            (\( d, l ) -> lessonMasterElement todaysDate pupilId lessons l d)
             sortedLessonTuples
         )
 
 
-lessonMasterElement : PupilId -> Journal -> Lesson -> DateString -> Element Msg
-lessonMasterElement pupilId journal lesson date =
+lessonMasterElement : DateString -> PupilId -> Journal -> Lesson -> DateString -> Element Msg
+lessonMasterElement todaysDate pupilId journal lesson lessonDate =
     let
         lessonText : Lesson -> String
         lessonText { thisfocus } =
@@ -592,9 +591,12 @@ lessonMasterElement pupilId journal lesson date =
         onlyLessonOfPupil =
             List.length (Dict.keys journal) == 1
 
+        hasLessonWithTodaysDate =
+            List.member todaysDate (Dict.keys journal)
+
         lessonId =
             { pupilId = pupilId
-            , date = date
+            , date = lessonDate
             }
     in
     Element.el
@@ -604,22 +606,24 @@ lessonMasterElement pupilId journal lesson date =
                ]
         )
         (Element.column [ Element.spacing smallSpace ]
-            [ Element.text <| date
+            [ Element.text <| lessonDate
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
             , Element.wrappedRow [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
-                , buttonElement "Copy" (CopyLesson lessonId)
+                , if not hasLessonWithTodaysDate then
+                    buttonElement "Copy" (CopyLesson lessonId)
+
+                  else
+                    disabledButtonElement "Copy"
                 , buttonElement "Edit"
                     (GotoPageEditLesson
                         { pupilId = pupilId
-                        , newDate = date
+                        , newDate = lessonDate
                         , lesson = lesson
-                        , oldDate = date
-                        , otherLessonDates = opAllLessonsExcept journal date
+                        , oldDate = lessonDate
+                        , otherLessonDates = opAllLessonsExcept journal lessonDate
                         }
                     )
-
-                -- @remind do not show Delete if last lesson of pupil!!!
                 , if onlyLessonOfPupil then
                     disabledButtonElement "Delete"
 
