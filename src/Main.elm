@@ -78,17 +78,8 @@ subscriptions model =
 
 initialModel : String -> ( Model, Cmd Msg )
 initialModel dateNow =
-    let
-        dateString =
-            case Date.fromIsoString "2020-01-12" of
-                Ok date ->
-                    Date.toIsoString (Date.add Date.Days 1 date)
-
-                Err error ->
-                    error
-    in
     ( { pupils = Dict.empty
-      , statusText = dateString
+      , statusText = "Loading..."
       , page = MainPage
       , saving = False
       , todaysDate = dateNow
@@ -256,7 +247,7 @@ gotPupilsUpdate model httpResult =
 
         Ok loadedPupils ->
             -- for debugging purposes ability to jump to specific page state
-            if False then
+            if True then
                 mainModel
                     { model
                         | pupils = loadedPupils
