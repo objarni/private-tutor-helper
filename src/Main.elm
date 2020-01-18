@@ -206,38 +206,28 @@ update msg model =
             in
             savePupilsUpdate newPupils model.todaysDate text
 
-        -- @remind DRY this up with single function with +1 and -1 argument!
-        DecrementDate ({ newDate } as lessonData) ->
-            let
-                updatedDate =
-                    case Date.fromIsoString newDate of
-                        Ok date ->
-                            Date.toIsoString (Date.add Date.Days -1 date)
-
-                        Err error ->
-                            error
-            in
-            ( { model
-                | page = EditLessonPage { lessonData | newDate = updatedDate }
-              }
-            , Cmd.none
-            )
+        DecrementDate lessonData ->
+            modifyDateUpdate model lessonData -1
 
         IncrementDate ({ newDate } as lessonData) ->
-            let
-                updatedDate =
-                    case Date.fromIsoString newDate of
-                        Ok date ->
-                            Date.toIsoString (Date.add Date.Days 1 date)
+            modifyDateUpdate model lessonData 1
 
-                        Err error ->
-                            error
-            in
-            ( { model
-                | page = EditLessonPage { lessonData | newDate = updatedDate }
-              }
-            , Cmd.none
-            )
+
+modifyDateUpdate model ({ newDate } as lessonData) direction =
+    let
+        updatedDate =
+            case Date.fromIsoString newDate of
+                Ok date ->
+                    Date.toIsoString (Date.add Date.Days direction date)
+
+                Err error ->
+                    error
+    in
+    ( { model
+        | page = EditLessonPage { lessonData | newDate = updatedDate }
+      }
+    , Cmd.none
+    )
 
 
 gotPupilsUpdate model httpResult =
