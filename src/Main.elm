@@ -52,6 +52,7 @@ type Msg
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
     | GotoPageEditLesson EditLessonData
+      -- @remind gray out copy lesson if it is todays date!
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
@@ -133,14 +134,14 @@ update msg model =
                 newPupils =
                     opCopyLesson lessonId model.todaysDate model.pupils
             in
-            savePupilsUpdate newPupils model.todaysDate "Lesson copied"
+            savePupilsUpdate newPupils model.todaysDate "Lesson copied" (PupilPage lessonId.pupilId)
 
         DeleteLesson lessonId ->
             let
                 newPupils =
                     opDeleteLesson lessonId model.pupils
             in
-            savePupilsUpdate newPupils model.todaysDate "Lesson deleted"
+            savePupilsUpdate newPupils model.todaysDate "Lesson deleted" (PupilPage lessonId.pupilId)
 
         PutPupils _ ->
             ( { model
@@ -190,7 +191,7 @@ update msg model =
                 newPupils =
                     opCreatePupil pupilId model.todaysDate model.pupils
             in
-            savePupilsUpdate newPupils model.todaysDate "New pupil added"
+            savePupilsUpdate newPupils model.todaysDate "New pupil added" MainPage
 
         SaveLesson editLessonData ->
             let
@@ -204,7 +205,7 @@ update msg model =
                         ++ editLessonData.pupilId
                         ++ "..."
             in
-            savePupilsUpdate newPupils model.todaysDate text
+            savePupilsUpdate newPupils model.todaysDate text (PupilPage editLessonData.pupilId)
 
         DecrementDate lessonData ->
             modifyDateUpdate model lessonData -1
@@ -282,12 +283,12 @@ validateName name model =
     nameError
 
 
-savePupilsUpdate : PupilLookup -> DateString -> String -> ( Model, Cmd Msg )
-savePupilsUpdate pupils today text =
+savePupilsUpdate : PupilLookup -> DateString -> String -> Page -> ( Model, Cmd Msg )
+savePupilsUpdate pupils today text nextPage =
     ( { pupils = pupils
       , saving = True
       , statusText = text
-      , page = MainPage
+      , page = nextPage
       , todaysDate = today
       }
     , Http.post
@@ -588,6 +589,9 @@ lessonMasterElement pupilId journal lesson date =
         lessonText { thisfocus } =
             String.slice 0 35 ("fixme" ++ ": " ++ thisfocus) ++ ".."
 
+        onlyLessonOfPupil =
+            List.length (Dict.keys journal) == 1
+
         lessonId =
             { pupilId = pupilId
             , date = date
@@ -616,7 +620,11 @@ lessonMasterElement pupilId journal lesson date =
                     )
 
                 -- @remind do not show Delete if last lesson of pupil!!!
-                , buttonElement "Delete" (DeleteLesson lessonId)
+                , if onlyLessonOfPupil then
+                    disabledButtonElement "Delete"
+
+                  else
+                    buttonElement "Delete" (DeleteLesson lessonId)
                 ]
             ]
         )
