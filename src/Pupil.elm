@@ -65,8 +65,6 @@ type alias Lesson =
 
 type alias EditLessonData =
     { pupilId : PupilId
-
-    -- @remind dateString could be called newDate for improved readability!
     , newDate : DateString
     , lesson : Lesson
     , oldDate : DateString
@@ -163,6 +161,10 @@ opCreatePupil pupilId date pupils =
     Dict.update pupilId (\_ -> Just newPupil) pupils
 
 
+
+-- @remind should be working on Journal, not PupilLookup!
+
+
 opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
 opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
     case Dict.get pupilId pupils of
@@ -184,6 +186,10 @@ opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
             pupils
 
 
+
+-- @remind use Journal not PupilLookup
+
+
 opCopyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
 opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
     case Dict.get pupilId pupils of
@@ -202,6 +208,10 @@ opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
 
         Nothing ->
             pupils
+
+
+
+-- @remind use Journal not PupilLookup
 
 
 opDeleteLesson : LessonId -> PupilLookup -> PupilLookup
