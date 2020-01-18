@@ -12,6 +12,7 @@ import Html exposing (Html)
 import Html.Events
 import Http
 import Pupil exposing (..)
+import Set exposing (Set)
 
 
 type alias Model =
@@ -170,10 +171,10 @@ update msg model =
             , Cmd.none
             )
 
-        GotoPageEditLesson ({ pupilId, dateString, lesson } as lessonData) ->
+        GotoPageEditLesson ({ pupilId, newDate, lesson } as lessonData) ->
             ( { model
                 | page = EditLessonPage lessonData
-                , statusText = "Editing " ++ dateString ++ " of " ++ pupilId
+                , statusText = "Editing " ++ newDate ++ " of " ++ pupilId
               }
             , Cmd.none
             )
@@ -207,17 +208,18 @@ update msg model =
 
                 text =
                     "Saving lesson "
-                        ++ editLessonData.dateString
+                        ++ editLessonData.newDate
                         ++ " of "
                         ++ editLessonData.pupilId
                         ++ "..."
             in
             savePupilsUpdate newPupils model.todaysDate text
 
-        DecrementDate ({ dateString } as lessonData) ->
+        -- @remind DRY this up with single function with +1 and -1 argument!
+        DecrementDate ({ newDate } as lessonData) ->
             let
-                newDate =
-                    case Date.fromIsoString dateString of
+                updatedDate =
+                    case Date.fromIsoString newDate of
                         Ok date ->
                             Date.toIsoString (Date.add Date.Days -1 date)
 
@@ -225,15 +227,15 @@ update msg model =
                             error
             in
             ( { model
-                | page = EditLessonPage { lessonData | dateString = newDate }
+                | page = EditLessonPage { lessonData | newDate = updatedDate }
               }
             , Cmd.none
             )
 
-        IncrementDate ({ dateString } as lessonData) ->
+        IncrementDate ({ newDate } as lessonData) ->
             let
-                newDate =
-                    case Date.fromIsoString dateString of
+                updatedDate =
+                    case Date.fromIsoString newDate of
                         Ok date ->
                             Date.toIsoString (Date.add Date.Days 1 date)
 
@@ -241,7 +243,7 @@ update msg model =
                             error
             in
             ( { model
-                | page = EditLessonPage { lessonData | dateString = newDate }
+                | page = EditLessonPage { lessonData | newDate = updatedDate }
               }
             , Cmd.none
             )
@@ -354,7 +356,7 @@ view model =
     in
     Element.layout
         [ Element.inFront
-            (Element.el [ fgGray, Font.italic ]
+            (Element.el grayItalics
                 (Element.text savingText)
             )
         ]
@@ -388,8 +390,8 @@ viewElement model =
                         Nothing ->
                             Element.none
 
-                EditLessonPage data ->
-                    editLessonPageElement data
+                EditLessonPage editLessonData ->
+                    editLessonPageElement editLessonData
     in
     Element.column
         [ Element.centerX
@@ -430,11 +432,20 @@ lessonPageElement lesson =
 
 
 editLessonPageElement : EditLessonData -> Element Msg
-editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
+editLessonPageElement pageData =
     let
+        { lesson } =
+            pageData
+
+        pageWidth =
+            round (containerWidth / 2)
+
+        dateIsFree =
+            not (Set.member pageData.newDate pageData.otherLessonDates)
+
         fieldInput : String -> String -> (String -> Lesson) -> Element Msg
         fieldInput fieldName fieldValue modifyLesson =
-            Input.multiline [ Element.width <| Element.px 600 ]
+            Input.multiline [ Element.width <| Element.px pageWidth ]
                 { text = fieldValue
                 , placeholder = Nothing
                 , spellcheck = True
@@ -442,10 +453,8 @@ editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
                 , onChange =
                     \x ->
                         GotoPageEditLesson
-                            { pupilId = pupilId
-                            , dateString = dateString
-                            , lesson = modifyLesson x
-                            , oldDate = dateString
+                            { pageData
+                                | lesson = modifyLesson x
                             }
                 }
     in
@@ -455,10 +464,25 @@ editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
         , Element.padding bigSpace
         ]
         [ Element.text "Date"
-        , Element.row (lightBorder ++ [ Element.spacing smallSpace ])
-            [ Element.text dateString
-            , buttonElement "<" (DecrementDate lessonData)
-            , buttonElement ">" (IncrementDate lessonData)
+        , let
+            dateText =
+                if dateIsFree then
+                    "Date is free"
+
+                else
+                    "Cannot save - date occupied"
+
+            duplicateDateElement =
+                Element.el grayItalics
+                    (Element.text dateText)
+          in
+          Element.column (lightBorder ++ [ Element.width <| Element.px pageWidth ])
+            [ Element.row [ Element.spacing smallSpace ]
+                [ Element.text pageData.newDate
+                , buttonElement "<" (DecrementDate pageData)
+                , buttonElement ">" (IncrementDate pageData)
+                ]
+            , duplicateDateElement
             ]
         , fieldInput
             "Focus"
@@ -467,15 +491,11 @@ editLessonPageElement ({ pupilId, dateString, lesson, oldDate } as lessonData) =
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
         , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
         , Element.el [ Element.centerX ]
-            (buttonElement
-                "Save"
-                (SaveLesson
-                    { pupilId = pupilId
-                    , dateString = dateString
-                    , lesson = lesson
-                    , oldDate = oldDate
-                    }
-                )
+            (if dateIsFree then
+                buttonElement "Save" (SaveLesson pageData)
+
+             else
+                disabledButtonElement "Save"
             )
         ]
 
@@ -544,7 +564,7 @@ pupilPageElement name { title, journal } =
         ]
 
 
-lessonsElement : Dict String Lesson -> PupilId -> Element Msg
+lessonsElement : Journal -> PupilId -> Element Msg
 lessonsElement lessons pupilId =
     let
         lessonList : List String
@@ -575,13 +595,13 @@ lessonsElement lessons pupilId =
     Element.wrappedRow
         [ Element.spacing smallSpace ]
         (List.map
-            (\( d, l ) -> lessonMasterElement pupilId l d)
+            (\( d, l ) -> lessonMasterElement pupilId lessons l d)
             sortedLessonTuples
         )
 
 
-lessonMasterElement : PupilId -> Lesson -> DateString -> Element Msg
-lessonMasterElement pupilId lesson date =
+lessonMasterElement : PupilId -> Journal -> Lesson -> DateString -> Element Msg
+lessonMasterElement pupilId journal lesson date =
     let
         lessonText : Lesson -> String
         lessonText { thisfocus } =
@@ -607,9 +627,10 @@ lessonMasterElement pupilId lesson date =
                 , buttonElement "Edit"
                     (GotoPageEditLesson
                         { pupilId = pupilId
-                        , dateString = date
+                        , newDate = date
                         , lesson = lesson
                         , oldDate = date
+                        , otherLessonDates = opAllLessonsExcept journal date
                         }
                     )
 
@@ -743,6 +764,10 @@ roundedBorder =
 
 containerWidth =
     1000
+
+
+grayItalics =
+    [ fgGray, Font.italic ]
 
 
 

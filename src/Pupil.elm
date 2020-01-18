@@ -1,11 +1,13 @@
 module Pupil exposing
     ( DateString
     , EditLessonData
+    , Journal
     , Lesson
     , LessonId
     , Pupil
     , PupilId
     , PupilLookup
+    , opAllLessonsExcept
     , opCopyLesson
     , opCreatePupil
     , opDeleteLesson
@@ -17,6 +19,7 @@ module Pupil exposing
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
+import Set exposing (Set)
 
 
 type alias PupilId =
@@ -35,12 +38,16 @@ type alias LessonId =
 
 type alias Pupil =
     { title : String
-    , journal : Dict DateString Lesson
+    , journal : Journal
     }
 
 
 type alias PupilLookup =
     Dict PupilId Pupil
+
+
+type alias Journal =
+    Dict DateString Lesson
 
 
 type alias Lesson =
@@ -58,9 +65,12 @@ type alias Lesson =
 
 type alias EditLessonData =
     { pupilId : PupilId
-    , dateString : DateString
+
+    -- @remind dateString could be called newDate for improved readability!
+    , newDate : DateString
     , lesson : Lesson
     , oldDate : DateString
+    , otherLessonDates : Set DateString
     }
 
 
@@ -154,7 +164,7 @@ opCreatePupil pupilId date pupils =
 
 
 opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
-opUpdateLesson { pupilId, dateString, lesson, oldDate } pupils =
+opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
     case Dict.get pupilId pupils of
         Just pupil ->
             let
@@ -162,7 +172,7 @@ opUpdateLesson { pupilId, dateString, lesson, oldDate } pupils =
                     Dict.remove oldDate pupil.journal
 
                 newJournal =
-                    Dict.update dateString (\_ -> Just lesson) journalWithoutOldLesson
+                    Dict.update newDate (\_ -> Just lesson) journalWithoutOldLesson
 
                 updatedPupil =
                     { pupil | journal = newJournal }
@@ -209,3 +219,8 @@ opDeleteLesson ({ pupilId, date } as lessonId) pupils =
 
         Nothing ->
             pupils
+
+
+opAllLessonsExcept : Journal -> DateString -> Set DateString
+opAllLessonsExcept journal date =
+    Set.fromList <| Dict.keys (Dict.remove date journal)
