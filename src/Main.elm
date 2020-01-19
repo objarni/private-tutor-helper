@@ -456,8 +456,7 @@ editLessonPageElement pageData =
                     "Cannot save - date occupied"
 
             duplicateDateElement =
-                Element.el grayItalics
-                    (Element.text dateText)
+                subtleTextElement dateText
           in
           Element.column (lightBorder ++ [ Element.width <| Element.px pageWidth ])
             [ Element.row [ Element.spacing smallSpace ]
@@ -722,7 +721,7 @@ disabledButtonElement buttonText =
 
 
 subtleTextElement text =
-    Element.el grayItalics
+    Element.el [ fgGray, Font.italic ]
         (Element.text text)
 
 
@@ -768,10 +767,6 @@ roundedBorder =
 
 containerWidth =
     1000
-
-
-grayItalics =
-    [ fgGray, Font.italic ]
 
 
 
