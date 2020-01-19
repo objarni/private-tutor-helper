@@ -252,6 +252,10 @@ gotPupilsUpdate model httpResult =
                 }
 
 
+
+-- @reminder: does not need whole Model, only pupil ids!
+
+
 validateName : PupilId -> Model -> Maybe String
 validateName name model =
     let
@@ -337,9 +341,7 @@ view model =
     in
     Element.layout
         [ Element.inFront
-            (Element.el grayItalics
-                (Element.text savingText)
-            )
+            (subtleTextElement savingText)
         ]
         (viewElement model)
 
@@ -499,7 +501,7 @@ addPupilPageElement pageData =
             , placeholder = Nothing
             , label = Input.labelAbove [] (Element.text "Pupil name")
             }
-        , Element.text
+        , subtleTextElement
             (case pageData.nameError of
                 Nothing ->
                     ""
@@ -682,6 +684,10 @@ pupilButtonElement pupil =
     buttonElement pupil (GotoPagePupil pupil)
 
 
+
+-- Utility functions
+
+
 buttonElement : String -> Msg -> Element Msg
 buttonElement buttonText onPressMsg =
     Element.el
@@ -713,6 +719,11 @@ disabledButtonElement buttonText =
             , label = Element.text buttonText
             }
         )
+
+
+subtleTextElement text =
+    Element.el grayItalics
+        (Element.text text)
 
 
 bgBlue =
