@@ -1,6 +1,7 @@
 module Pupil exposing
     ( DateString
     , EditLessonData
+    , EditPupilData
     , Journal
     , Lesson
     , LessonId
@@ -69,6 +70,12 @@ type alias EditLessonData =
     , lesson : Lesson
     , oldDate : DateString
     , otherLessonDates : Set DateString
+    }
+
+
+type alias EditPupilData =
+    { pupilId : PupilId
+    , pupil : Pupil
     }
 
 

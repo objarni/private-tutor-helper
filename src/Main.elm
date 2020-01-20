@@ -30,6 +30,7 @@ type Page
     | PupilPage PupilId
     | LessonPage LessonId
     | EditLessonPage EditLessonData
+    | EditPupilPage EditPupilData
 
 
 type alias AddingPupilPageData =
@@ -52,6 +53,7 @@ type Msg
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
     | GotoPageEditLesson EditLessonData
+    | GotoPageEditPupil PupilId
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
@@ -212,6 +214,19 @@ update msg model =
         IncrementDate ({ newDate } as lessonData) ->
             modifyDateUpdate model lessonData 1
 
+        GotoPageEditPupil pupilId ->
+            case Dict.get pupilId model.pupils of
+                Just pupil ->
+                    ( { model
+                        | page = EditPupilPage { pupilId = pupilId, pupil = pupil }
+                        , statusText = "Editing " ++ pupilId
+                      }
+                    , Cmd.none
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
 
 modifyDateUpdate model ({ newDate } as lessonData) direction =
     let
@@ -302,6 +317,11 @@ savePupilsUpdate pupils today text nextPage =
     )
 
 
+
+-- @remind do we really need this function anymore? Isn't pupilId included in page's
+-- data if it is relevant, hence available where needed?
+
+
 findSelectedPupilId : Model -> PupilId
 findSelectedPupilId { pupils, page } =
     case page of
@@ -318,6 +338,9 @@ findSelectedPupilId { pupils, page } =
             pupilId
 
         EditLessonPage { pupilId } ->
+            pupilId
+
+        EditPupilPage { pupilId } ->
             pupilId
 
 
@@ -375,6 +398,9 @@ viewElement model =
 
                 EditLessonPage editLessonData ->
                     editLessonPageElement editLessonData
+
+                EditPupilPage editPupilData ->
+                    editPupilPageElement editPupilData
     in
     Element.column
         [ Element.centerX
@@ -482,6 +508,72 @@ editLessonPageElement pageData =
         ]
 
 
+editPupilPageElement : EditPupilData -> Element Msg
+editPupilPageElement _ =
+    Element.text "Not implemented yet"
+
+
+
+--let
+--    { lesson } =
+--        pageData
+--    pageWidth =
+--        round (containerWidth / 2)
+--    dateIsFree =
+--        not (Set.member pageData.newDate pageData.otherLessonDates)
+--    fieldInput : String -> String -> (String -> Lesson) -> Element Msg
+--    fieldInput fieldName fieldValue modifyLesson =
+--        Input.multiline [ Element.width <| Element.px pageWidth ]
+--            { text = fieldValue
+--            , placeholder = Nothing
+--            , spellcheck = True
+--            , label = Input.labelAbove [] (Element.text fieldName)
+--            , onChange =
+--                \x ->
+--                    GotoPageEditLesson
+--                        { pageData
+--                            | lesson = modifyLesson x
+--                        }
+--            }
+--in
+--Element.column
+--    [ Element.centerX
+--    , Element.spacing smallSpace
+--    , Element.padding bigSpace
+--    ]
+--    [ Element.text "Date"
+--    , let
+--        dateText =
+--            if dateIsFree then
+--                "Date is free"
+--            else
+--                "Cannot save - date occupied"
+--        duplicateDateElement =
+--            subtleTextElement dateText
+--      in
+--      Element.column (lightBorder ++ [ Element.width <| Element.px pageWidth ])
+--        [ Element.row [ Element.spacing smallSpace ]
+--            [ Element.text pageData.newDate
+--            , buttonElement "<" (DecrementDate pageData)
+--            , buttonElement ">" (IncrementDate pageData)
+--            ]
+--        , duplicateDateElement
+--        ]
+--    , fieldInput
+--        "Focus"
+--        lesson.thisfocus
+--        (\x -> { lesson | thisfocus = x })
+--    , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
+--    , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
+--    , Element.el [ Element.centerX ]
+--        (if dateIsFree then
+--            buttonElement "Save" (SaveLesson pageData)
+--         else
+--            disabledButtonElement "Save"
+--        )
+--    ]
+
+
 addPupilPageElement : AddingPupilPageData -> Element Msg
 addPupilPageElement pageData =
     let
@@ -542,7 +634,7 @@ pupilPageElement todaysDate name { title, journal } =
         ]
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
-        , Element.el [ Element.centerX ] (buttonElement "Edit" GotoPagePupils)
+        , Element.el [ Element.centerX ] (buttonElement "Edit" (GotoPageEditPupil name))
         , lessonsElement todaysDate journal name
         ]
 

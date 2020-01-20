@@ -7,5 +7,5 @@ Wishlist
 - Deploy to some cloud provider
   - docker
   - https
-  - authentication (at least p/w)
+  - authentication (at least p/w. htaccess)
   - CI/CD
