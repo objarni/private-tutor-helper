@@ -11,28 +11,25 @@ The previous iteration of this system was a single `journal.json` file structure
 
 ```
 {
-  "Pupils": [
-    {
-      "Name": "Bill Klinton",
+  "Pupils": {
+    "Bill Klinton": {
       "Title": "CEO Digital Soft",
-      "Journal": [
-        {
-          "Date": "2019-12-01",
+      "Journal": {
+        "2019-12-01": {
           "Location": "At his home",
           "ThisFocus": "PyCharm+requests installation and testing AB/CD API",
           "Homework": "Finish script",
           "NextFocus": "String formatting"
         },
-        {
-          "Date": "2019-12-15",
+        "2019-12-15": {
           "Location": "At his home",
           "ThisFocus": "String formatting, especially f-strings",
           "Homework": "Rewrite string formatting code of script to use f-strings",
           "NextFocus": "Logging"
         }
-      ]
+      }
     }
-  ]
+  }
 }
 ```
 

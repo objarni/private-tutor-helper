@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (sandbox)
+import Date
 import Dict exposing (Dict)
 import Element exposing (Element)
 import Element.Background as Background
@@ -11,10 +12,11 @@ import Html exposing (Html)
 import Html.Events
 import Http
 import Pupil exposing (..)
+import Set exposing (Set)
 
 
 type alias Model =
-    { pupils : Dict PupilId Pupil
+    { pupils : PupilLookup
     , statusText : String
     , page : Page
     , saving : Bool
@@ -27,18 +29,12 @@ type Page
     | AddingPupilPage AddingPupilPageData
     | PupilPage PupilId
     | LessonPage LessonId
-    | EditLessonPage PupilId DateString Lesson
+    | EditLessonPage EditLessonData
 
 
 type alias AddingPupilPageData =
     { nameError : Maybe String
     , name : String
-    }
-
-
-type alias LessonId =
-    { pupilId : String
-    , date : String
     }
 
 
@@ -49,16 +45,20 @@ type alias LessonId =
 
 
 type Msg
-    = GotPupils (Result Http.Error (Dict PupilId Pupil))
+    = GotPupils (Result Http.Error PupilLookup)
     | PutPupils (Result Http.Error String)
     | GotoPageAddPupil
     | GotoPagePupils
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
-    | GotoPageEditLesson PupilId DateString Lesson
+    | GotoPageEditLesson EditLessonData
     | CopyLesson LessonId
+    | DeleteLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
+    | SaveLesson EditLessonData
+    | DecrementDate EditLessonData
+    | IncrementDate EditLessonData
 
 
 main : Program String Model Msg
@@ -79,7 +79,7 @@ subscriptions model =
 initialModel : String -> ( Model, Cmd Msg )
 initialModel dateNow =
     ( { pupils = Dict.empty
-      , statusText = "Loading pupils..."
+      , statusText = "Loading..."
       , page = MainPage
       , saving = False
       , todaysDate = dateNow
@@ -130,15 +130,23 @@ update msg model =
 
         CopyLesson lessonId ->
             let
-                newModel =
-                    copyLesson model lessonId
+                newPupils =
+                    opCopyLesson lessonId model.todaysDate model.pupils
             in
-            ( newModel
-            , savePupilsCommand newModel.pupils
-            )
+            savePupilsUpdate newPupils model.todaysDate "Lesson copied" (PupilPage lessonId.pupilId)
+
+        DeleteLesson lessonId ->
+            let
+                newPupils =
+                    opDeleteLesson lessonId model.pupils
+            in
+            savePupilsUpdate newPupils model.todaysDate "Lesson deleted" (PupilPage lessonId.pupilId)
 
         PutPupils _ ->
-            ( { model | saving = False }
+            ( { model
+                | saving = False
+                , statusText = "Journal saved."
+              }
             , Cmd.none
             )
 
@@ -154,10 +162,10 @@ update msg model =
             , Cmd.none
             )
 
-        GotoPageEditLesson pupilId date lesson ->
+        GotoPageEditLesson ({ pupilId, newDate, lesson } as lessonData) ->
             ( { model
-                | page = EditLessonPage pupilId date lesson
-                , statusText = "Editing " ++ date ++ " of " ++ pupilId
+                | page = EditLessonPage lessonData
+                , statusText = "Editing " ++ newDate ++ " of " ++ pupilId
               }
             , Cmd.none
             )
@@ -179,12 +187,47 @@ update msg model =
 
         CreatePupil pupilId ->
             let
-                newModel =
-                    createPupil pupilId model
+                newPupils =
+                    opCreatePupil pupilId model.todaysDate model.pupils
             in
-            ( newModel
-            , savePupilsCommand newModel.pupils
-            )
+            savePupilsUpdate newPupils model.todaysDate "New pupil added" MainPage
+
+        SaveLesson editLessonData ->
+            let
+                newPupils =
+                    opUpdateLesson editLessonData model.pupils
+
+                text =
+                    "Saving lesson "
+                        ++ editLessonData.newDate
+                        ++ " of "
+                        ++ editLessonData.pupilId
+                        ++ "..."
+            in
+            savePupilsUpdate newPupils model.todaysDate text (PupilPage editLessonData.pupilId)
+
+        DecrementDate lessonData ->
+            modifyDateUpdate model lessonData -1
+
+        IncrementDate ({ newDate } as lessonData) ->
+            modifyDateUpdate model lessonData 1
+
+
+modifyDateUpdate model ({ newDate } as lessonData) direction =
+    let
+        updatedDate =
+            case Date.fromIsoString newDate of
+                Ok date ->
+                    Date.toIsoString (Date.add Date.Days direction date)
+
+                Err error ->
+                    error
+    in
+    ( { model
+        | page = EditLessonPage { lessonData | newDate = updatedDate }
+      }
+    , Cmd.none
+    )
 
 
 gotPupilsUpdate model httpResult =
@@ -204,80 +247,13 @@ gotPupilsUpdate model httpResult =
             else
                 { model
                     | pupils = loadedPupils
-                    , page =
-                        EditLessonPage "Maria Bylund"
-                            "2018-07-15"
-                            { thisfocus = "def, return and argument grokking. functions as small programs. differentiate keywords, builtin functions, std.lib. read column values from .xls file"
-                            , location = "Fastlagsgatan 21"
-                            , homework = "Read Start Trek movie list from .xls file, repeat previous excercise on that data"
-                            , nextfocus = "Read two columns 'until' condition (her application)"
-                            }
+                    , page = PupilPage "Bertha Babbage"
                     , statusText = "Debug landing page"
                 }
 
 
-copyLesson : Model -> LessonId -> Model
-copyLesson model ({ pupilId } as lessonId) =
-    let
-        oldPupil =
-            case lookupPupil pupilId model of
-                Just p ->
-                    p
 
-                Nothing ->
-                    Debug.todo "How to express this better?"
-
-        insertLesson maybeLesson =
-            lookupLesson lessonId model
-
-        newJournal =
-            Dict.update model.todaysDate insertLesson oldPupil.journal
-
-        newPupil =
-            { oldPupil | journal = newJournal }
-
-        newPupils =
-            replacePupil model.pupils pupilId newPupil
-    in
-    { model
-        | pupils = newPupils
-        , statusText = "Lesson copied"
-        , saving = True
-    }
-
-
-createPupil : PupilId -> Model -> Model
-createPupil pupilId model =
-    let
-        insertLesson maybeLesson =
-            Just
-                { thisfocus = "Learn stuff"
-                , nextfocus = "Learn more stuff"
-                , homework = "Practice, practice, practice"
-                , location = "Remote"
-                }
-
-        newJournal =
-            Dict.update model.todaysDate insertLesson Dict.empty
-
-        newPupil =
-            { title = "Mr Pupil"
-            , journal = newJournal
-            }
-
-        newModel =
-            let
-                insertPupil : Maybe Pupil -> Maybe Pupil
-                insertPupil p =
-                    Just newPupil
-            in
-            { model
-                | pupils = Dict.update pupilId insertPupil model.pupils
-                , page = MainPage
-                , statusText = "New pupil added"
-            }
-    in
-    newModel
+-- @reminder: does not need whole Model, only pupil ids!
 
 
 validateName : PupilId -> Model -> Maybe String
@@ -310,13 +286,20 @@ validateName name model =
     nameError
 
 
-savePupilsCommand : Dict PupilId Pupil -> Cmd Msg
-savePupilsCommand pupils =
-    Http.post
+savePupilsUpdate : PupilLookup -> DateString -> String -> Page -> ( Model, Cmd Msg )
+savePupilsUpdate pupils today text nextPage =
+    ( { pupils = pupils
+      , saving = True
+      , statusText = text
+      , page = nextPage
+      , todaysDate = today
+      }
+    , Http.post
         { url = "/save"
         , body = Http.stringBody "application/json" <| pupilsToJSONString pupils
         , expect = Http.expectString PutPupils
         }
+    )
 
 
 findSelectedPupilId : Model -> PupilId
@@ -334,17 +317,8 @@ findSelectedPupilId { pupils, page } =
         LessonPage { pupilId } ->
             pupilId
 
-        EditLessonPage pupilId _ _ ->
+        EditLessonPage { pupilId } ->
             pupilId
-
-
-replacePupil : Dict PupilId Pupil -> PupilId -> Pupil -> Dict PupilId Pupil
-replacePupil pupils pupilId newPupil =
-    let
-        updatePupil pupil =
-            Just newPupil
-    in
-    Dict.update pupilId updatePupil pupils
 
 
 mainModel : Model -> String -> Model
@@ -367,7 +341,7 @@ view model =
     in
     Element.layout
         [ Element.inFront
-            (Element.text savingText)
+            (subtleTextElement savingText)
         ]
         (viewElement model)
 
@@ -386,7 +360,7 @@ viewElement model =
                 PupilPage pupilId ->
                     case lookupPupil pupilId model of
                         Just p ->
-                            pupilPageElement pupilId p
+                            pupilPageElement model.todaysDate pupilId p
 
                         Nothing ->
                             Debug.todo "Ugh"
@@ -399,8 +373,8 @@ viewElement model =
                         Nothing ->
                             Element.none
 
-                EditLessonPage pupilId date lesson ->
-                    editLessonPageElement pupilId date lesson
+                EditLessonPage editLessonData ->
+                    editLessonPageElement editLessonData
     in
     Element.column
         [ Element.centerX
@@ -433,91 +407,79 @@ lessonPageElement lesson =
               }
             ]
     in
-    Element.table
-        ([ Element.width (Element.maximum containerWidth Element.fill)
-         , Element.spacing smallSpace
-         ]
-            ++ lightBorder
-        )
-        { data = data
-        , columns =
-            [ { header = Element.none
-              , width = Element.px 150
-              , view = \prop -> Element.text prop.field
-              }
-            , { header = Element.none
-              , width = Element.fill
-              , view = \prop -> Element.paragraph [] [ Element.text prop.value ]
-              }
-            ]
-        }
+    Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
+        [ Element.text <| "This lesson: " ++ lesson.thisfocus
+        , Element.text <| "Next lesson: " ++ lesson.nextfocus
+        , Element.text <| "Homework: " ++ lesson.homework
+        ]
 
 
-editLessonPageElement : PupilId -> DateString -> Lesson -> Element Msg
-editLessonPageElement pupilId dateString lesson =
+editLessonPageElement : EditLessonData -> Element Msg
+editLessonPageElement pageData =
     let
-        fieldInput fieldName fieldValue updateLesson =
-            Input.multiline [ Element.width <| Element.px 600 ]
+        { lesson } =
+            pageData
+
+        pageWidth =
+            round (containerWidth / 2)
+
+        dateIsFree =
+            not (Set.member pageData.newDate pageData.otherLessonDates)
+
+        fieldInput : String -> String -> (String -> Lesson) -> Element Msg
+        fieldInput fieldName fieldValue modifyLesson =
+            Input.multiline [ Element.width <| Element.px pageWidth ]
                 { text = fieldValue
                 , placeholder = Nothing
                 , spellcheck = True
                 , label = Input.labelAbove [] (Element.text fieldName)
-                , onChange = \x -> GotoPageEditLesson pupilId dateString (updateLesson x)
+                , onChange =
+                    \x ->
+                        GotoPageEditLesson
+                            { pageData
+                                | lesson = modifyLesson x
+                            }
                 }
     in
-    Element.column [ Element.centerX, Element.spacing smallSpace ]
-        [ fieldInput "Focus" lesson.thisfocus (\x -> { lesson | thisfocus = x })
+    Element.column
+        [ Element.centerX
+        , Element.spacing smallSpace
+        , Element.padding bigSpace
+        ]
+        [ Element.text "Date"
+        , let
+            dateText =
+                if dateIsFree then
+                    "Date is free"
+
+                else
+                    "Cannot save - date occupied"
+
+            duplicateDateElement =
+                subtleTextElement dateText
+          in
+          Element.column (lightBorder ++ [ Element.width <| Element.px pageWidth ])
+            [ Element.row [ Element.spacing smallSpace ]
+                [ Element.text pageData.newDate
+                , buttonElement "<" (DecrementDate pageData)
+                , buttonElement ">" (IncrementDate pageData)
+                ]
+            , duplicateDateElement
+            ]
+        , fieldInput
+            "Focus"
+            lesson.thisfocus
+            (\x -> { lesson | thisfocus = x })
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
         , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
+        , Element.el [ Element.centerX ]
+            (if dateIsFree then
+                buttonElement "Save" (SaveLesson pageData)
+
+             else
+                disabledButtonElement "Save"
+            )
         ]
-
-
-
---let
---    data =
---        [ { field = "Focus"
---          , value = lesson.thisfocus
---          }
---        , { field = "Next time"
---          , value = lesson.nextfocus
---          }
---        , { field = "Homework"
---          , value = lesson.homework
---          }
---        ]
---    form =
---        Element.table
---            ([ Element.width (Element.maximum containerWidth Element.fill)
---             , Element.spacing smallSpace
---             ]
---                ++ lightBorder
---            )
---            { data = data
---            , columns =
---                [ { header = Element.none
---                  , width = Element.px 150
---                  , view = \prop -> Element.text prop.field
---                  }
---                , { header = Element.none
---                  , width = Element.fill
---                  , view =
---                        \prop ->
---                            Element.paragraph []
---                                [ Input.text []
---                                    { onChange = \x -> SuggestNewPupilName x
---                                    , text = prop.value
---                                    , placeholder = Nothing
---                                    , label = Input.labelAbove [] (Element.text prop.field)
---                                    }
---                                ]
---                  }
---                ]
---            }
---in
---Element.column [ Element.centerX ]
---    [ Element.text <| "Editing " ++ dateString ++ " of " ++ pupilId
---    , form
---    ]
 
 
 addPupilPageElement : AddingPupilPageData -> Element Msg
@@ -538,7 +500,7 @@ addPupilPageElement pageData =
             , placeholder = Nothing
             , label = Input.labelAbove [] (Element.text "Pupil name")
             }
-        , Element.text
+        , subtleTextElement
             (case pageData.nameError of
                 Nothing ->
                     ""
@@ -573,19 +535,20 @@ lookupLesson { pupilId, date } { pupils } =
     maybeLesson
 
 
-pupilPageElement name { title, journal } =
+pupilPageElement todaysDate name { title, journal } =
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
         ]
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
-        , lessonsElement journal name
+        , Element.el [ Element.centerX ] (buttonElement "Edit" GotoPagePupils)
+        , lessonsElement todaysDate journal name
         ]
 
 
-lessonsElement : Dict String Lesson -> PupilId -> Element Msg
-lessonsElement lessons pupilId =
+lessonsElement : DateString -> Journal -> PupilId -> Element Msg
+lessonsElement todaysDate lessons pupilId =
     let
         lessonList : List String
         lessonList =
@@ -613,25 +576,29 @@ lessonsElement lessons pupilId =
                 sortedLessonIds
     in
     Element.wrappedRow
-        [ Element.spacing smallSpace
-        , Element.centerX
-        ]
+        [ Element.spacing smallSpace ]
         (List.map
-            (\( d, l ) -> lessonMasterElement pupilId l d)
+            (\( d, l ) -> lessonMasterElement todaysDate pupilId lessons l d)
             sortedLessonTuples
         )
 
 
-lessonMasterElement : PupilId -> Lesson -> DateString -> Element Msg
-lessonMasterElement pupilId lesson date =
+lessonMasterElement : DateString -> PupilId -> Journal -> Lesson -> DateString -> Element Msg
+lessonMasterElement todaysDate pupilId journal lesson lessonDate =
     let
         lessonText : Lesson -> String
         lessonText { thisfocus } =
             String.slice 0 35 ("fixme" ++ ": " ++ thisfocus) ++ ".."
 
+        onlyLessonOfPupil =
+            List.length (Dict.keys journal) == 1
+
+        hasLessonWithTodaysDate =
+            List.member todaysDate (Dict.keys journal)
+
         lessonId =
             { pupilId = pupilId
-            , date = date
+            , date = lessonDate
             }
     in
     Element.el
@@ -641,12 +608,29 @@ lessonMasterElement pupilId lesson date =
                ]
         )
         (Element.column [ Element.spacing smallSpace ]
-            [ Element.text <| date
+            [ Element.text <| lessonDate
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
-            , Element.row [ Element.alignBottom, Element.spacing smallSpace ]
+            , Element.wrappedRow [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" (GotoPageLesson lessonId)
-                , buttonElement "Copy" (CopyLesson lessonId)
-                , buttonElement "Edit" (GotoPageEditLesson pupilId date lesson)
+                , if not hasLessonWithTodaysDate then
+                    buttonElement "Copy" (CopyLesson lessonId)
+
+                  else
+                    disabledButtonElement "Copy"
+                , buttonElement "Edit"
+                    (GotoPageEditLesson
+                        { pupilId = pupilId
+                        , newDate = lessonDate
+                        , lesson = lesson
+                        , oldDate = lessonDate
+                        , otherLessonDates = opAllLessonsExcept journal lessonDate
+                        }
+                    )
+                , if onlyLessonOfPupil then
+                    disabledButtonElement "Delete"
+
+                  else
+                    buttonElement "Delete" (DeleteLesson lessonId)
                 ]
             ]
         )
@@ -658,7 +642,7 @@ headerElement statusText =
         , Element.centerX
         ]
         [ Element.el
-            [ Element.centerX, Element.padding bigSpace ]
+            [ Element.padding bigSpace ]
             (Input.button
                 [ Element.padding bigSpace
                 , Font.size 30
@@ -667,23 +651,25 @@ headerElement statusText =
                 , roundedBorder
                 ]
                 { onPress = Just GotoPagePupils
-                , label = Element.text "Lesson Journal"
+                , label =
+                    Element.el []
+                        (Element.text "Lesson Journal")
                 }
             )
         , Element.el
-            [ Element.centerX
-            ]
+            [ Element.centerX ]
             (Element.text statusText)
         ]
 
 
-pupilsPageElement : Dict PupilId Pupil -> Element Msg
+pupilsPageElement : PupilLookup -> Element Msg
 pupilsPageElement pupils =
     let
         pupilNames =
             Dict.keys pupils
     in
-    Element.column [ Element.padding bigSpace ]
+    Element.column
+        [ Element.padding bigSpace, Element.centerX ]
         [ Element.wrappedRow
             [ Element.spacing smallSpace
             , Element.centerX
@@ -698,6 +684,10 @@ pupilButtonElement pupil =
     buttonElement pupil (GotoPagePupil pupil)
 
 
+
+-- Utility functions
+
+
 buttonElement : String -> Msg -> Element Msg
 buttonElement buttonText onPressMsg =
     Element.el
@@ -705,9 +695,10 @@ buttonElement buttonText onPressMsg =
         , fgWhite
         , roundedBorder
         , Element.alignLeft
-        , Element.padding smallSpace
         ]
-        (Input.button []
+        (Input.button
+            [ Element.padding smallSpace
+            ]
             { onPress = Just onPressMsg
             , label = Element.text buttonText
             }
@@ -730,12 +721,21 @@ disabledButtonElement buttonText =
         )
 
 
+subtleTextElement text =
+    Element.el [ fgGray, Font.italic ]
+        (Element.text text)
+
+
 bgBlue =
     Background.color (Element.rgb255 0 140 165)
 
 
 bgGray =
     Background.color (Element.rgb255 100 100 100)
+
+
+fgGray =
+    Font.color (Element.rgb255 100 100 100)
 
 
 bgRed =

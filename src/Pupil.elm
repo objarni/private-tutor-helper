@@ -1,8 +1,17 @@
 module Pupil exposing
     ( DateString
+    , EditLessonData
+    , Journal
     , Lesson
+    , LessonId
     , Pupil
     , PupilId
+    , PupilLookup
+    , opAllLessonsExcept
+    , opCopyLesson
+    , opCreatePupil
+    , opDeleteLesson
+    , opUpdateLesson
     , pupilsFromJSON
     , pupilsToJSONString
     )
@@ -10,6 +19,7 @@ module Pupil exposing
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
+import Set exposing (Set)
 
 
 type alias PupilId =
@@ -20,10 +30,24 @@ type alias DateString =
     String
 
 
+type alias LessonId =
+    { pupilId : String
+    , date : String
+    }
+
+
 type alias Pupil =
     { title : String
-    , journal : Dict DateString Lesson
+    , journal : Journal
     }
+
+
+type alias PupilLookup =
+    Dict PupilId Pupil
+
+
+type alias Journal =
+    Dict DateString Lesson
 
 
 type alias Lesson =
@@ -35,10 +59,24 @@ type alias Lesson =
 
 
 
+-- @remind this record feels very 'far away' from
+-- the JSON/pupils data -- better name or other design?
+
+
+type alias EditLessonData =
+    { pupilId : PupilId
+    , newDate : DateString
+    , lesson : Lesson
+    , oldDate : DateString
+    , otherLessonDates : Set DateString
+    }
+
+
+
 -- Decoders (JSON -> type)
 
 
-pupilsFromJSON : D.Decoder (Dict PupilId Pupil)
+pupilsFromJSON : D.Decoder PupilLookup
 pupilsFromJSON =
     D.field "Pupils"
         (D.dict pupilFromJSON)
@@ -67,12 +105,12 @@ lessonFromJSON =
 -- Encoders (type -> JSON)
 
 
-pupilsToJSONString : Dict PupilId Pupil -> String
+pupilsToJSONString : PupilLookup -> String
 pupilsToJSONString savePupils =
     E.encode 2 <| pupilsToJSON savePupils
 
 
-pupilsToJSON : Dict PupilId Pupil -> E.Value
+pupilsToJSON : PupilLookup -> E.Value
 pupilsToJSON pupils =
     E.object
         [ ( "Pupils", E.dict identity pupilToJSON pupils )
@@ -95,3 +133,104 @@ lessonToJSON lesson =
         , ( "Homework", E.string lesson.homework )
         , ( "NextFocus", E.string lesson.nextfocus )
         ]
+
+
+
+-- Operations
+
+
+opCreatePupil : PupilId -> DateString -> PupilLookup -> PupilLookup
+opCreatePupil pupilId date pupils =
+    let
+        insertLesson _ =
+            Just
+                { thisfocus = "Learn stuff"
+                , nextfocus = "Learn more stuff"
+                , homework = "Practice, practice, practice"
+                , location = "Remote"
+                }
+
+        newJournal =
+            Dict.update date insertLesson Dict.empty
+
+        newPupil =
+            { title = "Mr Pupil"
+            , journal = newJournal
+            }
+    in
+    Dict.update pupilId (\_ -> Just newPupil) pupils
+
+
+
+-- @remind should be working on Journal, not PupilLookup!
+
+
+opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
+opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
+    case Dict.get pupilId pupils of
+        Just pupil ->
+            let
+                journalWithoutOldLesson =
+                    Dict.remove oldDate pupil.journal
+
+                newJournal =
+                    Dict.update newDate (\_ -> Just lesson) journalWithoutOldLesson
+
+                updatedPupil =
+                    { pupil | journal = newJournal }
+            in
+            Dict.update pupilId (\_ -> Just updatedPupil) pupils
+
+        Nothing ->
+            -- @remind this feels wrong
+            pupils
+
+
+
+-- @remind use Journal not PupilLookup
+
+
+opCopyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
+opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
+    case Dict.get pupilId pupils of
+        Just pupil ->
+            let
+                oldLesson =
+                    Dict.get date pupil.journal
+
+                newJournal =
+                    Dict.update todaysDate (\_ -> oldLesson) pupil.journal
+
+                newPupil =
+                    { pupil | journal = newJournal }
+            in
+            Dict.update pupilId (\_ -> Just newPupil) pupils
+
+        Nothing ->
+            pupils
+
+
+
+-- @remind use Journal not PupilLookup
+
+
+opDeleteLesson : LessonId -> PupilLookup -> PupilLookup
+opDeleteLesson ({ pupilId, date } as lessonId) pupils =
+    case Dict.get pupilId pupils of
+        Just pupil ->
+            let
+                newPupil =
+                    { pupil
+                        | journal =
+                            Dict.remove date pupil.journal
+                    }
+            in
+            Dict.update pupilId (\_ -> Just newPupil) pupils
+
+        Nothing ->
+            pupils
+
+
+opAllLessonsExcept : Journal -> DateString -> Set DateString
+opAllLessonsExcept journal date =
+    Set.fromList <| Dict.keys (Dict.remove date journal)
