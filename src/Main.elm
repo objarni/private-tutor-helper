@@ -53,7 +53,7 @@ type Msg
     | GotoPagePupil PupilId
     | GotoPageLesson LessonId
     | GotoPageEditLesson EditLessonData
-    | GotoPageEditPupil PupilId
+    | GotoPageEditPupil EditPupilData
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
@@ -61,6 +61,7 @@ type Msg
     | SaveLesson EditLessonData
     | DecrementDate EditLessonData
     | IncrementDate EditLessonData
+    | SavePupil EditPupilData
 
 
 main : Program String Model Msg
@@ -214,18 +215,28 @@ update msg model =
         IncrementDate ({ newDate } as lessonData) ->
             modifyDateUpdate model lessonData 1
 
-        GotoPageEditPupil pupilId ->
-            case Dict.get pupilId model.pupils of
-                Just pupil ->
-                    ( { model
-                        | page = EditPupilPage { pupilId = pupilId, pupil = pupil }
-                        , statusText = "Editing " ++ pupilId
-                      }
-                    , Cmd.none
-                    )
+        GotoPageEditPupil pageData ->
+            ( { model
+                | page = EditPupilPage pageData
+                , statusText = "Editing " ++ pageData.pupilId
+              }
+            , Cmd.none
+            )
 
-                Nothing ->
-                    ( model, Cmd.none )
+        SavePupil pageData ->
+            let
+                newPupils =
+                    opUpdatePupil pageData model.pupils
+
+                text =
+                    "Saving pupil "
+                        ++ pageData.pupilId
+                        ++ "..."
+            in
+            savePupilsUpdate newPupils
+                model.todaysDate
+                text
+                (PupilPage pageData.pupilId)
 
 
 modifyDateUpdate model ({ newDate } as lessonData) direction =
@@ -509,69 +520,44 @@ editLessonPageElement pageData =
 
 
 editPupilPageElement : EditPupilData -> Element Msg
-editPupilPageElement _ =
-    Element.text "Not implemented yet"
+editPupilPageElement pageData =
+    let
+        { pupil } =
+            pageData
 
+        pageWidth =
+            round (containerWidth / 2)
 
-
---let
---    { lesson } =
---        pageData
---    pageWidth =
---        round (containerWidth / 2)
---    dateIsFree =
---        not (Set.member pageData.newDate pageData.otherLessonDates)
---    fieldInput : String -> String -> (String -> Lesson) -> Element Msg
---    fieldInput fieldName fieldValue modifyLesson =
---        Input.multiline [ Element.width <| Element.px pageWidth ]
---            { text = fieldValue
---            , placeholder = Nothing
---            , spellcheck = True
---            , label = Input.labelAbove [] (Element.text fieldName)
---            , onChange =
---                \x ->
---                    GotoPageEditLesson
---                        { pageData
---                            | lesson = modifyLesson x
---                        }
---            }
---in
---Element.column
---    [ Element.centerX
---    , Element.spacing smallSpace
---    , Element.padding bigSpace
---    ]
---    [ Element.text "Date"
---    , let
---        dateText =
---            if dateIsFree then
---                "Date is free"
---            else
---                "Cannot save - date occupied"
---        duplicateDateElement =
---            subtleTextElement dateText
---      in
---      Element.column (lightBorder ++ [ Element.width <| Element.px pageWidth ])
---        [ Element.row [ Element.spacing smallSpace ]
---            [ Element.text pageData.newDate
---            , buttonElement "<" (DecrementDate pageData)
---            , buttonElement ">" (IncrementDate pageData)
---            ]
---        , duplicateDateElement
---        ]
---    , fieldInput
---        "Focus"
---        lesson.thisfocus
---        (\x -> { lesson | thisfocus = x })
---    , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
---    , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
---    , Element.el [ Element.centerX ]
---        (if dateIsFree then
---            buttonElement "Save" (SaveLesson pageData)
---         else
---            disabledButtonElement "Save"
---        )
---    ]
+        fieldInput : String -> String -> (String -> Pupil) -> Element Msg
+        fieldInput fieldName fieldValue modifyPupil =
+            Input.multiline [ Element.width <| Element.px pageWidth ]
+                { text = fieldValue
+                , placeholder = Nothing
+                , spellcheck = True
+                , label = Input.labelAbove [] (Element.text fieldName)
+                , onChange =
+                    \x ->
+                        GotoPageEditPupil
+                            { pageData
+                                | pupil = modifyPupil x
+                            }
+                }
+    in
+    Element.column
+        [ Element.centerX
+        , Element.spacing smallSpace
+        , Element.padding bigSpace
+        ]
+        [ fieldInput
+            "Title"
+            pupil.title
+            (\x -> { pupil | title = x })
+        , Element.el [ Element.centerX ]
+            (buttonElement
+                "Save"
+                (SavePupil pageData)
+            )
+        ]
 
 
 addPupilPageElement : AddingPupilPageData -> Element Msg
@@ -627,14 +613,22 @@ lookupLesson { pupilId, date } { pupils } =
     maybeLesson
 
 
-pupilPageElement todaysDate name { title, journal } =
+pupilPageElement : DateString -> PupilId -> Pupil -> Element Msg
+pupilPageElement todaysDate name ({ title, journal } as pupil) =
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
         ]
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
-        , Element.el [ Element.centerX ] (buttonElement "Edit" (GotoPageEditPupil name))
+        , Element.el [ Element.centerX ]
+            (buttonElement "Edit"
+                (GotoPageEditPupil
+                    { pupilId = name
+                    , pupil = pupil
+                    }
+                )
+            )
         , lessonsElement todaysDate journal name
         ]
 

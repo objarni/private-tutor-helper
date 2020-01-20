@@ -13,6 +13,7 @@ module Pupil exposing
     , opCreatePupil
     , opDeleteLesson
     , opUpdateLesson
+    , opUpdatePupil
     , pupilsFromJSON
     , pupilsToJSONString
     )
@@ -191,6 +192,11 @@ opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
         Nothing ->
             -- @remind this feels wrong
             pupils
+
+
+opUpdatePupil : EditPupilData -> PupilLookup -> PupilLookup
+opUpdatePupil { pupilId, pupil } pupils =
+    Dict.update pupilId (\_ -> Just pupil) pupils
 
 
 
