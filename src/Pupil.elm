@@ -40,6 +40,7 @@ type alias LessonId =
 
 type alias Pupil =
     { title : String
+    , email : String
     , journal : Journal
     }
 
@@ -92,7 +93,8 @@ pupilsFromJSON =
 
 pupilFromJSON : D.Decoder Pupil
 pupilFromJSON =
-    D.map2 Pupil
+    D.map3 Pupil
+        (D.field "Email" D.string)
         (D.field "Title" D.string)
         (D.field "Journal"
             (D.dict
@@ -129,6 +131,7 @@ pupilToJSON : Pupil -> E.Value
 pupilToJSON pupil =
     E.object
         [ ( "Title", E.string pupil.title )
+        , ( "Email", E.string pupil.email )
         , ( "Journal", E.dict identity lessonToJSON pupil.journal )
         ]
 
@@ -163,6 +166,7 @@ opCreatePupil pupilId date pupils =
 
         newPupil =
             { title = "Mr Pupil"
+            , email = "first.last@anywhere.co.uk"
             , journal = newJournal
             }
     in

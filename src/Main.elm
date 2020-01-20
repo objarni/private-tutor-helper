@@ -614,13 +614,15 @@ lookupLesson { pupilId, date } { pupils } =
 
 
 pupilPageElement : DateString -> PupilId -> Pupil -> Element Msg
-pupilPageElement todaysDate name ({ title, journal } as pupil) =
+pupilPageElement todaysDate name ({ title, email, journal } as pupil) =
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
         ]
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
+        , Element.el [ Element.centerX ]
+            (Element.text <| "Email: " ++ email)
         , Element.el [ Element.centerX ]
             (buttonElement "Edit"
                 (GotoPageEditPupil
