@@ -542,6 +542,7 @@ pupilPageElement todaysDate name { title, journal } =
         ]
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
+        , Element.el [ Element.centerX ] (buttonElement "Edit" GotoPagePupils)
         , lessonsElement todaysDate journal name
         ]
 
