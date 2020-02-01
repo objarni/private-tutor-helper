@@ -55,8 +55,8 @@ type Msg
     | CreatePupil PupilId
     | SuggestNewPupilName PupilId
     | SaveLesson EditLessonData
-    | DecrementDate EditLessonData
-    | IncrementDate EditLessonData
+    | DecrementDate
+    | IncrementDate
     | SavePupil EditPupilData
 
 
@@ -172,11 +172,11 @@ update msg model =
             in
             savePupilsUpdate newPupils model.todaysDate text (PagePupil editLessonData.pupilId)
 
-        DecrementDate lessonData ->
-            modifyDateUpdate model lessonData -1
+        DecrementDate ->
+            modifyNewLessonDateUpdate -1 model
 
-        IncrementDate ({ newDate } as lessonData) ->
-            modifyDateUpdate model lessonData 1
+        IncrementDate ->
+            modifyNewLessonDateUpdate 1 model
 
         SavePupil pageData ->
             let
@@ -194,8 +194,20 @@ update msg model =
                 (PagePupil pageData.pupilId)
 
 
-modifyDateUpdate model ({ newDate } as lessonData) direction =
+modifyNewLessonDateUpdate : Int -> Model -> ( Model, Cmd a )
+modifyNewLessonDateUpdate direction model =
     let
+        lessonData =
+            case model.page of
+                PageEditLesson editPageData ->
+                    editPageData
+
+                _ ->
+                    Debug.todo "err"
+
+        newDate =
+            lessonData.newDate
+
         updatedDate =
             case Date.fromIsoString newDate of
                 Ok date ->
@@ -475,8 +487,8 @@ editLessonPageElement pageData =
           Element.column (lightBorder ++ [ Element.width <| Element.px pageWidth ])
             [ Element.row [ Element.spacing smallSpace ]
                 [ Element.text pageData.newDate
-                , buttonElement "<" (DecrementDate pageData)
-                , buttonElement ">" (IncrementDate pageData)
+                , buttonElement "<" DecrementDate
+                , buttonElement ">" IncrementDate
                 ]
             , duplicateDateElement
             ]
