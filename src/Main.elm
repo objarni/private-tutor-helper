@@ -50,7 +50,6 @@ type Msg
     = GotPupils (Result Http.Error PupilLookup)
     | PutPupils (Result Http.Error String)
     | Goto Page (Maybe String)
-    | GotoPageEditLesson EditLessonData
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
@@ -133,14 +132,6 @@ update msg model =
             ( { model
                 | saving = False
                 , statusText = "Journal saved."
-              }
-            , Cmd.none
-            )
-
-        GotoPageEditLesson ({ pupilId, newDate, lesson } as lessonData) ->
-            ( { model
-                | page = PageEditLesson lessonData
-                , statusText = "Editing " ++ newDate ++ " of " ++ pupilId
               }
             , Cmd.none
             )
@@ -455,10 +446,13 @@ editLessonPageElement pageData =
                 , label = Input.labelAbove [] (Element.text fieldName)
                 , onChange =
                     \x ->
-                        GotoPageEditLesson
-                            { pageData
-                                | lesson = modifyLesson x
-                            }
+                        Goto
+                            (PageEditLesson
+                                { pageData
+                                    | lesson = modifyLesson x
+                                }
+                            )
+                            Nothing
                 }
     in
     Element.column
@@ -690,13 +684,16 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
                   else
                     disabledButtonElement "Copy"
                 , buttonElement "Edit"
-                    (GotoPageEditLesson
-                        { pupilId = pupilId
-                        , newDate = lessonDate
-                        , lesson = lesson
-                        , oldDate = lessonDate
-                        , otherLessonDates = opAllLessonsExcept journal lessonDate
-                        }
+                    (Goto
+                        (PageEditLesson
+                            { pupilId = pupilId
+                            , newDate = lessonDate
+                            , lesson = lesson
+                            , oldDate = lessonDate
+                            , otherLessonDates = opAllLessonsExcept journal lessonDate
+                            }
+                        )
+                        (Just <| "Editing " ++ lessonDate ++ " of " ++ pupilId)
                     )
                 , if onlyLessonOfPupil then
                     disabledButtonElement "Delete"
