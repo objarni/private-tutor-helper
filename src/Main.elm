@@ -11,6 +11,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Events
 import Http
+import Mailto
 import Pupil exposing (..)
 import Set exposing (Set)
 
@@ -258,8 +259,11 @@ modifyDateUpdate model ({ newDate } as lessonData) direction =
 
 gotPupilsUpdate model httpResult =
     case httpResult of
+        Err (Http.BadBody s) ->
+            mainModel model ("Http error: " ++ s)
+
         Err _ ->
-            mainModel model "Http error!"
+            mainModel model "Http error"
 
         Ok loadedPupils ->
             -- for debugging purposes ability to jump to specific page state
@@ -443,11 +447,20 @@ lessonPageElement lesson =
               , value = lesson.homework
               }
             ]
+
+        mailToAttr =
+            Mailto.toHref
+                (Mailto.mailto "partner@test.mail"
+                    |> Mailto.subject "I want to cook you dinner"
+                    |> Mailto.body "It will be a spicy nam dtok muu salad."
+                )
     in
     Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
         [ Element.text <| "This lesson: " ++ lesson.thisfocus
         , Element.text <| "Next lesson: " ++ lesson.nextfocus
         , Element.text <| "Homework: " ++ lesson.homework
+        , Element.html
+            (Html.a [ mailToAttr ] [ Html.text "test" ])
         ]
 
 
