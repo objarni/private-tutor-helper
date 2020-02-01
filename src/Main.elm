@@ -49,10 +49,8 @@ type alias AddPupilData =
 type Msg
     = GotPupils (Result Http.Error PupilLookup)
     | PutPupils (Result Http.Error String)
-    | Goto Page String
-    | GotoPageLesson LessonId
+    | Goto Page (Maybe String)
     | GotoPageEditLesson EditLessonData
-    | GotoPageEditPupil EditPupilData
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
@@ -105,22 +103,17 @@ update msg model =
             , Cmd.none
             )
 
-        Goto _ statusText ->
-            ( mainModel model statusText
-            , Cmd.none
-            )
+        Goto page maybeStatusText ->
+            case maybeStatusText of
+                Just text ->
+                    ( { model | page = page, statusText = text }
+                    , Cmd.none
+                    )
 
-        GotoPageLesson { date } ->
-            ( { model
-                | statusText = "Lesson for " ++ selectedPupilId ++ " at " ++ date
-                , page =
-                    PageLesson
-                        { pupilId = selectedPupilId
-                        , date = date
-                        }
-              }
-            , Cmd.none
-            )
+                Nothing ->
+                    ( { model | page = page }
+                    , Cmd.none
+                    )
 
         CopyLesson lessonId ->
             let
@@ -194,14 +187,6 @@ update msg model =
         IncrementDate ({ newDate } as lessonData) ->
             modifyDateUpdate model lessonData 1
 
-        GotoPageEditPupil pageData ->
-            ( { model
-                | page = PageEditPupil pageData
-                , statusText = "Editing " ++ pageData.pupilId
-              }
-            , Cmd.none
-            )
-
         SavePupil pageData ->
             let
                 newPupils =
@@ -238,10 +223,10 @@ modifyDateUpdate model ({ newDate } as lessonData) direction =
 gotPupilsUpdate model httpResult =
     case httpResult of
         Err (Http.BadBody s) ->
-            mainModel model ("Http error: " ++ s)
+            mainModel model (Just ("Http error: " ++ s))
 
         Err _ ->
-            mainModel model "Http error"
+            mainModel model (Just "Http error")
 
         Ok loadedPupils ->
             -- for debugging purposes ability to jump to specific page state
@@ -250,7 +235,7 @@ gotPupilsUpdate model httpResult =
                     { model
                         | pupils = loadedPupils
                     }
-                    "Pupils loaded"
+                    (Just "Pupils loaded")
 
             else
                 { model
@@ -337,12 +322,19 @@ findSelectedPupilId { pupils, page } =
             pupilId
 
 
-mainModel : Model -> String -> Model
-mainModel model text =
-    { model
-        | page = PageMain
-        , statusText = text
-    }
+mainModel : Model -> Maybe String -> Model
+mainModel model maybeText =
+    case maybeText of
+        Just text ->
+            { model
+                | page = PageMain
+                , statusText = text
+            }
+
+        Nothing ->
+            { model
+                | page = PageMain
+            }
 
 
 view : Model -> Html Msg
@@ -528,10 +520,9 @@ editPupilPageElement pageData =
                 , label = Input.labelAbove [] (Element.text fieldName)
                 , onChange =
                     \x ->
-                        GotoPageEditPupil
-                            { pageData
-                                | pupil = modifyPupil x
-                            }
+                        Goto
+                            (PageEditPupil pageData)
+                            Nothing
                 }
     in
     Element.column
@@ -616,10 +607,9 @@ pupilPageElement todaysDate name ({ title, email, journal } as pupil) =
             (Element.text <| "Email: " ++ email)
         , Element.el [ Element.centerX ]
             (buttonElement "Edit"
-                (GotoPageEditPupil
-                    { pupilId = name
-                    , pupil = pupil
-                    }
+                (Goto
+                    (PageEditPupil { pupil = pupil, pupilId = name })
+                    (Just ("Editing " ++ name))
                 )
             )
         , lessonsElement todaysDate journal name
@@ -679,6 +669,9 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
             { pupilId = pupilId
             , date = lessonDate
             }
+
+        gotoMsg =
+            Goto (PageLesson lessonId) (Just ("Lesson for " ++ pupilId ++ " at " ++ lessonDate))
     in
     Element.el
         (lightBorder
@@ -690,7 +683,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
             [ Element.text <| lessonDate
             , Element.paragraph [] [ Element.text lesson.thisfocus ]
             , Element.wrappedRow [ Element.alignBottom, Element.spacing smallSpace ]
-                [ buttonElement "View" (GotoPageLesson lessonId)
+                [ buttonElement "View" gotoMsg
                 , if not hasLessonWithTodaysDate then
                     buttonElement "Copy" (CopyLesson lessonId)
 
@@ -729,7 +722,7 @@ headerElement statusText =
                 , fgWhite
                 , roundedBorder
                 ]
-                { onPress = Just (Goto PageMain "Viewing pupils")
+                { onPress = Just (Goto PageMain (Just "Viewing pupils"))
                 , label =
                     Element.el []
                         (Element.text "Lesson Journal")
@@ -762,7 +755,7 @@ pupilsPageElement pupils =
                         , name = ""
                         }
                     )
-                    "Add new pupil"
+                    (Just "Add new pupil")
                 )
             )
         ]
@@ -772,7 +765,7 @@ pupilButtonElement pupil =
     buttonElement pupil
         (Goto
             (PagePupil pupil)
-            ("Viewing " ++ pupil)
+            (Just ("Viewing " ++ pupil))
         )
 
 
