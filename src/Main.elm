@@ -49,9 +49,7 @@ type alias AddingPupilPageData =
 type Msg
     = GotPupils (Result Http.Error PupilLookup)
     | PutPupils (Result Http.Error String)
-    | GotoPageAddPupil
-    | GotoPagePupils
-    | GotoPagePupil PupilId
+    | Goto Page String
     | GotoPageLesson LessonId
     | GotoPageEditLesson EditLessonData
     | GotoPageEditPupil EditPupilData
@@ -107,16 +105,8 @@ update msg model =
             , Cmd.none
             )
 
-        GotoPagePupils ->
-            ( mainModel model "Viewing pupils"
-            , Cmd.none
-            )
-
-        GotoPagePupil pupil ->
-            ( { model
-                | page = PupilPage pupil
-                , statusText = "Viewing " ++ pupil
-              }
+        Goto _ statusText ->
+            ( mainModel model statusText
             , Cmd.none
             )
 
@@ -150,18 +140,6 @@ update msg model =
             ( { model
                 | saving = False
                 , statusText = "Journal saved."
-              }
-            , Cmd.none
-            )
-
-        GotoPageAddPupil ->
-            ( { model
-                | page =
-                    AddingPupilPage
-                        { nameError = Just "Name is empty"
-                        , name = ""
-                        }
-                , statusText = "Add new pupil"
               }
             , Cmd.none
             )
@@ -751,7 +729,7 @@ headerElement statusText =
                 , fgWhite
                 , roundedBorder
                 ]
-                { onPress = Just GotoPagePupils
+                { onPress = Just (Goto MainPage "Viewing pupils")
                 , label =
                     Element.el []
                         (Element.text "Lesson Journal")
@@ -777,12 +755,25 @@ pupilsPageElement pupils =
             ]
             (List.map (\name -> pupilButtonElement name) pupilNames)
         , Element.el [ Element.centerX, Element.padding bigSpace ]
-            (buttonElement "Add Pupil" GotoPageAddPupil)
+            (buttonElement "Add Pupil"
+                (Goto
+                    (AddingPupilPage
+                        { nameError = Just "Name is empty"
+                        , name = ""
+                        }
+                    )
+                    "Add new pupil"
+                )
+            )
         ]
 
 
 pupilButtonElement pupil =
-    buttonElement pupil (GotoPagePupil pupil)
+    buttonElement pupil
+        (Goto
+            (PupilPage pupil)
+            ("Viewing " ++ pupil)
+        )
 
 
 
