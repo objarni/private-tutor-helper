@@ -26,15 +26,15 @@ type alias Model =
 
 
 type Page
-    = MainPage
-    | AddingPupilPage AddingPupilPageData
-    | PupilPage PupilId
-    | LessonPage LessonId
-    | EditLessonPage EditLessonData
-    | EditPupilPage EditPupilData
+    = PageMain
+    | PageAddPupil AddPupilData
+    | PagePupil PupilId
+    | PageLesson LessonId
+    | PageEditLesson EditLessonData
+    | PageEditPupil EditPupilData
 
 
-type alias AddingPupilPageData =
+type alias AddPupilData =
     { nameError : Maybe String
     , name : String
     }
@@ -82,7 +82,7 @@ initialModel : String -> ( Model, Cmd Msg )
 initialModel dateNow =
     ( { pupils = Dict.empty
       , statusText = "Loading..."
-      , page = MainPage
+      , page = PageMain
       , saving = False
       , todaysDate = dateNow
       }
@@ -114,7 +114,7 @@ update msg model =
             ( { model
                 | statusText = "Lesson for " ++ selectedPupilId ++ " at " ++ date
                 , page =
-                    LessonPage
+                    PageLesson
                         { pupilId = selectedPupilId
                         , date = date
                         }
@@ -127,14 +127,14 @@ update msg model =
                 newPupils =
                     opCopyLesson lessonId model.todaysDate model.pupils
             in
-            savePupilsUpdate newPupils model.todaysDate "Lesson copied" (PupilPage lessonId.pupilId)
+            savePupilsUpdate newPupils model.todaysDate "Lesson copied" (PagePupil lessonId.pupilId)
 
         DeleteLesson lessonId ->
             let
                 newPupils =
                     opDeleteLesson lessonId model.pupils
             in
-            savePupilsUpdate newPupils model.todaysDate "Lesson deleted" (PupilPage lessonId.pupilId)
+            savePupilsUpdate newPupils model.todaysDate "Lesson deleted" (PagePupil lessonId.pupilId)
 
         PutPupils _ ->
             ( { model
@@ -146,7 +146,7 @@ update msg model =
 
         GotoPageEditLesson ({ pupilId, newDate, lesson } as lessonData) ->
             ( { model
-                | page = EditLessonPage lessonData
+                | page = PageEditLesson lessonData
                 , statusText = "Editing " ++ newDate ++ " of " ++ pupilId
               }
             , Cmd.none
@@ -159,7 +159,7 @@ update msg model =
             in
             ( { model
                 | page =
-                    AddingPupilPage
+                    PageAddPupil
                         { nameError = nameError
                         , name = name
                         }
@@ -172,7 +172,7 @@ update msg model =
                 newPupils =
                     opCreatePupil pupilId model.todaysDate model.pupils
             in
-            savePupilsUpdate newPupils model.todaysDate "New pupil added" MainPage
+            savePupilsUpdate newPupils model.todaysDate "New pupil added" PageMain
 
         SaveLesson editLessonData ->
             let
@@ -186,7 +186,7 @@ update msg model =
                         ++ editLessonData.pupilId
                         ++ "..."
             in
-            savePupilsUpdate newPupils model.todaysDate text (PupilPage editLessonData.pupilId)
+            savePupilsUpdate newPupils model.todaysDate text (PagePupil editLessonData.pupilId)
 
         DecrementDate lessonData ->
             modifyDateUpdate model lessonData -1
@@ -196,7 +196,7 @@ update msg model =
 
         GotoPageEditPupil pageData ->
             ( { model
-                | page = EditPupilPage pageData
+                | page = PageEditPupil pageData
                 , statusText = "Editing " ++ pageData.pupilId
               }
             , Cmd.none
@@ -215,7 +215,7 @@ update msg model =
             savePupilsUpdate newPupils
                 model.todaysDate
                 text
-                (PupilPage pageData.pupilId)
+                (PagePupil pageData.pupilId)
 
 
 modifyDateUpdate model ({ newDate } as lessonData) direction =
@@ -229,7 +229,7 @@ modifyDateUpdate model ({ newDate } as lessonData) direction =
                     error
     in
     ( { model
-        | page = EditLessonPage { lessonData | newDate = updatedDate }
+        | page = PageEditLesson { lessonData | newDate = updatedDate }
       }
     , Cmd.none
     )
@@ -255,7 +255,7 @@ gotPupilsUpdate model httpResult =
             else
                 { model
                     | pupils = loadedPupils
-                    , page = PupilPage "Bertha Babbage"
+                    , page = PagePupil "Bertha Babbage"
                     , statusText = "Debug landing page"
                 }
 
@@ -318,29 +318,29 @@ savePupilsUpdate pupils today text nextPage =
 findSelectedPupilId : Model -> PupilId
 findSelectedPupilId { pupils, page } =
     case page of
-        MainPage ->
+        PageMain ->
             ""
 
-        AddingPupilPage _ ->
+        PageAddPupil _ ->
             ""
 
-        PupilPage pupilId ->
+        PagePupil pupilId ->
             pupilId
 
-        LessonPage { pupilId } ->
+        PageLesson { pupilId } ->
             pupilId
 
-        EditLessonPage { pupilId } ->
+        PageEditLesson { pupilId } ->
             pupilId
 
-        EditPupilPage { pupilId } ->
+        PageEditPupil { pupilId } ->
             pupilId
 
 
 mainModel : Model -> String -> Model
 mainModel model text =
     { model
-        | page = MainPage
+        | page = PageMain
         , statusText = text
     }
 
@@ -367,13 +367,13 @@ viewElement model =
     let
         content =
             case model.page of
-                MainPage ->
+                PageMain ->
                     pupilsPageElement model.pupils
 
-                AddingPupilPage pageData ->
+                PageAddPupil pageData ->
                     addPupilPageElement pageData
 
-                PupilPage pupilId ->
+                PagePupil pupilId ->
                     case lookupPupil pupilId model of
                         Just p ->
                             pupilPageElement model.todaysDate pupilId p
@@ -381,7 +381,7 @@ viewElement model =
                         Nothing ->
                             Debug.todo "Ugh"
 
-                LessonPage lessonId ->
+                PageLesson lessonId ->
                     case lookupLesson lessonId model of
                         Just lesson ->
                             lessonPageElement lesson
@@ -389,10 +389,10 @@ viewElement model =
                         Nothing ->
                             Element.none
 
-                EditLessonPage editLessonData ->
+                PageEditLesson editLessonData ->
                     editLessonPageElement editLessonData
 
-                EditPupilPage editPupilData ->
+                PageEditPupil editPupilData ->
                     editPupilPageElement editPupilData
     in
     Element.column
@@ -551,7 +551,7 @@ editPupilPageElement pageData =
         ]
 
 
-addPupilPageElement : AddingPupilPageData -> Element Msg
+addPupilPageElement : AddPupilData -> Element Msg
 addPupilPageElement pageData =
     let
         button =
@@ -729,7 +729,7 @@ headerElement statusText =
                 , fgWhite
                 , roundedBorder
                 ]
-                { onPress = Just (Goto MainPage "Viewing pupils")
+                { onPress = Just (Goto PageMain "Viewing pupils")
                 , label =
                     Element.el []
                         (Element.text "Lesson Journal")
@@ -757,7 +757,7 @@ pupilsPageElement pupils =
         , Element.el [ Element.centerX, Element.padding bigSpace ]
             (buttonElement "Add Pupil"
                 (Goto
-                    (AddingPupilPage
+                    (PageAddPupil
                         { nameError = Just "Name is empty"
                         , name = ""
                         }
@@ -771,7 +771,7 @@ pupilsPageElement pupils =
 pupilButtonElement pupil =
     buttonElement pupil
         (Goto
-            (PupilPage pupil)
+            (PagePupil pupil)
             ("Viewing " ++ pupil)
         )
 
