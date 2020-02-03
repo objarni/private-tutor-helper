@@ -384,7 +384,7 @@ viewElement model =
                         )
                     of
                         ( Just pupil, Just lesson ) ->
-                            lessonPageElement pupil.email lesson
+                            lessonPageElement pupil.email lessonId.date lesson
 
                         ( _, _ ) ->
                             Element.text "Huh?"
@@ -411,8 +411,8 @@ type alias LessonProperty =
     }
 
 
-lessonPageElement : String -> Lesson -> Element Msg
-lessonPageElement email lesson =
+lessonPageElement : String -> DateString -> Lesson -> Element Msg
+lessonPageElement email date lesson =
     let
         data =
             [ { field = "Focus"
@@ -426,10 +426,13 @@ lessonPageElement email lesson =
               }
             ]
 
+        subject =
+            "Summary of lesson " ++ date
+
         mailToAttr =
             Mailto.toHref
                 (Mailto.mailto email
-                    |> Mailto.subject "I want to cook you dinner"
+                    |> Mailto.subject subject
                     |> Mailto.body "It will be a spicy nam dtok muu salad."
                 )
     in
