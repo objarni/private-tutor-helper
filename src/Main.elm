@@ -60,6 +60,10 @@ type Msg
     | SavePupil EditPupilData
 
 
+
+-- @remind IDEA: LessonMsg EditLessonData LessonMsgKind ??
+
+
 main : Program String Model Msg
 main =
     Browser.element
