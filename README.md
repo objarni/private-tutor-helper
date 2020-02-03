@@ -42,7 +42,7 @@ The previous iteration of this system was a single `journal.json` file structure
 
 ### What technologies are used?
 
-  - Elm0.19.0 + elm-ui for front end
+  - Elm0.19 + elm-ui for front end
   - Python3.6 with bottle.py for backend
   - git + GitHub for hosting, version control and CI
   - Make for building, testing, serving app
