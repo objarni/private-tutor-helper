@@ -429,11 +429,19 @@ lessonPageElement email date lesson =
         subject =
             "Summary of lesson " ++ date
 
+        body =
+            "This lesson: "
+                ++ lesson.thisfocus
+                ++ "\nNext lesson: "
+                ++ lesson.nextfocus
+                ++ "\nHomework: "
+                ++ lesson.homework
+
         mailToAttr =
             Mailto.toHref
                 (Mailto.mailto email
                     |> Mailto.subject subject
-                    |> Mailto.body "It will be a spicy nam dtok muu salad."
+                    |> Mailto.body body
                 )
     in
     Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
