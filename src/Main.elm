@@ -261,6 +261,7 @@ validateName name model =
 
         unique : String -> Bool
         unique pupilId =
+            -- @remind - get rid of lookupXX functions!
             case lookupPupil pupilId model of
                 Just pupil ->
                     False
@@ -377,12 +378,16 @@ viewElement model =
                             Debug.todo "Ugh"
 
                 PageLesson lessonId ->
-                    case lookupLesson lessonId model of
-                        Just lesson ->
-                            lessonPageElement lesson
+                    case
+                        ( lookupPupil lessonId.pupilId model
+                        , lookupLesson lessonId model
+                        )
+                    of
+                        ( Just pupil, Just lesson ) ->
+                            lessonPageElement pupil.email lesson
 
-                        Nothing ->
-                            Element.none
+                        ( _, _ ) ->
+                            Element.text "Huh?"
 
                 PageEditLesson editLessonData ->
                     editLessonPageElement editLessonData
@@ -406,8 +411,8 @@ type alias LessonProperty =
     }
 
 
-lessonPageElement : Lesson -> Element Msg
-lessonPageElement lesson =
+lessonPageElement : String -> Lesson -> Element Msg
+lessonPageElement email lesson =
     let
         data =
             [ { field = "Focus"
@@ -423,7 +428,7 @@ lessonPageElement lesson =
 
         mailToAttr =
             Mailto.toHref
-                (Mailto.mailto "partner@test.mail"
+                (Mailto.mailto email
                     |> Mailto.subject "I want to cook you dinner"
                     |> Mailto.body "It will be a spicy nam dtok muu salad."
                 )
