@@ -443,13 +443,20 @@ lessonPageElement email date lesson =
                     |> Mailto.subject subject
                     |> Mailto.body body
                 )
+
+        mailtoLink =
+            Element.el [ Element.centerX, Element.padding smallSpace ]
+                (Element.html
+                    (Html.a [ mailToAttr ] [ Html.text "Write mail summary" ])
+                )
     in
-    Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
-        [ Element.text <| "This lesson: " ++ lesson.thisfocus
-        , Element.text <| "Next lesson: " ++ lesson.nextfocus
-        , Element.text <| "Homework: " ++ lesson.homework
-        , Element.html
-            (Html.a [ mailToAttr ] [ Html.text "test" ])
+    Element.column [ Element.centerX ]
+        [ Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
+            [ Element.text <| "This lesson: " ++ lesson.thisfocus
+            , Element.text <| "Next lesson: " ++ lesson.nextfocus
+            , Element.text <| "Homework: " ++ lesson.homework
+            ]
+        , mailtoLink
         ]
 
 
