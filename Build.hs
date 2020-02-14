@@ -28,6 +28,3 @@ main = shakeArgs shakeOptions $ do
         let toRemove = [".shake/", 
                         "elm-stuff/"]
         cmd "rm -rf" toRemove
-
--- output/js/app.js: src/*.elm
---     elm make src/Main.elm --output=output/js/app.js
