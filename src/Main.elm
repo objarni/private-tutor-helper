@@ -53,7 +53,7 @@ type Msg
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
-    | SuggestNewPupilName String
+    | SuggestNewPupilName PupilId
     | SaveLesson EditLessonData
     | DecrementDate
     | IncrementDate
@@ -171,7 +171,7 @@ update msg model =
                     "Saving lesson "
                         ++ editLessonData.newDate
                         ++ " of "
-                        ++ unwrap editLessonData.pupilId
+                        ++ editLessonData.pupilId
                         ++ "..."
             in
             savePupilsUpdate newPupils model.todaysDate text (PagePupil editLessonData.pupilId)
@@ -189,7 +189,7 @@ update msg model =
 
                 text =
                     "Saving pupil "
-                        ++ unwrap pageData.pupilId
+                        ++ pageData.pupilId
                         ++ "..."
             in
             savePupilsUpdate newPupils
@@ -247,7 +247,7 @@ gotPupilsUpdate model httpResult =
             else
                 { model
                     | pupils = loadedPupils
-                    , page = PagePupil (PupilId "Bertha Babbage")
+                    , page = PagePupil "Bertha Babbage"
                     , statusText = "Debug landing page"
                 }
 
@@ -256,7 +256,7 @@ gotPupilsUpdate model httpResult =
 -- @reminder: does not need whole Model, only pupil ids!
 
 
-validateName : String -> Model -> Maybe String
+validateName : PupilId -> Model -> Maybe String
 validateName name model =
     let
         notEmpty : String -> Bool
@@ -264,8 +264,9 @@ validateName name model =
             not << String.isEmpty
 
         unique : String -> Bool
-        unique n =
-            case lookupPupil (PupilId n) model of
+        unique pupilId =
+            -- @remind - get rid of lookupXX functions!
+            case lookupPupil pupilId model of
                 Just pupil ->
                     False
 
@@ -311,11 +312,10 @@ findSelectedPupilId : Model -> PupilId
 findSelectedPupilId { pupils, page } =
     case page of
         PageMain ->
-            -- @remind stop using magic string
-            PupilId ""
+            ""
 
         PageAddPupil _ ->
-            PupilId ""
+            ""
 
         PagePupil pupilId ->
             pupilId
@@ -581,7 +581,7 @@ addPupilPageElement pageData =
         button =
             case pageData.nameError of
                 Nothing ->
-                    buttonElement "Save" <| CreatePupil (PupilId pageData.name)
+                    buttonElement "Save" <| CreatePupil pageData.name
 
                 Just error ->
                     disabledButtonElement "Save"
@@ -608,14 +608,14 @@ addPupilPageElement pageData =
 
 lookupPupil : PupilId -> Model -> Maybe Pupil
 lookupPupil pupilName { pupils } =
-    Dict.get (unwrap pupilName) pupils
+    Dict.get pupilName pupils
 
 
 lookupLesson : LessonId -> Model -> Maybe Lesson
 lookupLesson { pupilId, date } { pupils } =
     let
         maybeRightPupil =
-            Dict.get (unwrap pupilId) pupils
+            Dict.get pupilId pupils
 
         maybeLesson =
             case maybeRightPupil of
@@ -629,11 +629,7 @@ lookupLesson { pupilId, date } { pupils } =
 
 
 pupilPageElement : DateString -> PupilId -> Pupil -> Element Msg
-pupilPageElement todaysDate pupilId ({ title, email, journal } as pupil) =
-    let
-        name =
-            unwrap pupilId
-    in
+pupilPageElement todaysDate name ({ title, email, journal } as pupil) =
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
@@ -645,11 +641,11 @@ pupilPageElement todaysDate pupilId ({ title, email, journal } as pupil) =
         , Element.el [ Element.centerX ]
             (buttonElement "Edit"
                 (Goto
-                    (PageEditPupil { pupil = pupil, pupilId = pupilId })
+                    (PageEditPupil { pupil = pupil, pupilId = name })
                     (Just ("Editing " ++ name))
                 )
             )
-        , lessonsElement todaysDate journal pupilId
+        , lessonsElement todaysDate journal name
         ]
 
 
@@ -689,10 +685,6 @@ lessonsElement todaysDate lessons pupilId =
         )
 
 
-
--- @remind this function is quite indented
-
-
 lessonMasterElement : DateString -> PupilId -> Journal -> Lesson -> DateString -> Element Msg
 lessonMasterElement todaysDate pupilId journal lesson lessonDate =
     let
@@ -712,14 +704,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
             }
 
         gotoMsg =
-            Goto (PageLesson lessonId)
-                (Just
-                    ("Lesson for "
-                        ++ unwrap pupilId
-                        ++ " at "
-                        ++ lessonDate
-                    )
-                )
+            Goto (PageLesson lessonId) (Just ("Lesson for " ++ pupilId ++ " at " ++ lessonDate))
     in
     Element.el
         (lightBorder
@@ -747,7 +732,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
                             , otherLessonDates = opAllLessonsExcept journal lessonDate
                             }
                         )
-                        (Just <| "Editing " ++ lessonDate ++ " of " ++ unwrap pupilId)
+                        (Just <| "Editing " ++ lessonDate ++ " of " ++ pupilId)
                     )
                 , if onlyLessonOfPupil then
                     disabledButtonElement "Delete"
@@ -815,7 +800,7 @@ pupilsPageElement pupils =
 pupilButtonElement pupil =
     buttonElement pupil
         (Goto
-            (PagePupil (PupilId pupil))
+            (PagePupil pupil)
             (Just ("Viewing " ++ pupil))
         )
 

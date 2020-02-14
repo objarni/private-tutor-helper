@@ -6,7 +6,7 @@ module Pupil exposing
     , Lesson
     , LessonId
     , Pupil
-    , PupilId(..)
+    , PupilId
     , PupilLookup
     , opAllLessonsExcept
     , opCopyLesson
@@ -16,7 +16,6 @@ module Pupil exposing
     , opUpdatePupil
     , pupilsFromJSON
     , pupilsToJSONString
-    , unwrap
     )
 
 import Dict exposing (Dict)
@@ -25,8 +24,8 @@ import Json.Encode as E
 import Set exposing (Set)
 
 
-type PupilId
-    = PupilId String
+type alias PupilId =
+    String
 
 
 type alias DateString =
@@ -34,7 +33,7 @@ type alias DateString =
 
 
 type alias LessonId =
-    { pupilId : PupilId
+    { pupilId : String
     , date : String
     }
 
@@ -47,7 +46,7 @@ type alias Pupil =
 
 
 type alias PupilLookup =
-    Dict String Pupil
+    Dict PupilId Pupil
 
 
 type alias Journal =
@@ -171,7 +170,7 @@ opCreatePupil pupilId date pupils =
             , journal = newJournal
             }
     in
-    Dict.update (unwrap pupilId) (\_ -> Just newPupil) pupils
+    Dict.update pupilId (\_ -> Just newPupil) pupils
 
 
 
@@ -180,7 +179,7 @@ opCreatePupil pupilId date pupils =
 
 opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
 opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
-    case Dict.get (unwrap pupilId) pupils of
+    case Dict.get pupilId pupils of
         Just pupil ->
             let
                 journalWithoutOldLesson =
@@ -192,23 +191,16 @@ opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
                 updatedPupil =
                     { pupil | journal = newJournal }
             in
-            Dict.update (unwrap pupilId) (\_ -> Just updatedPupil) pupils
+            Dict.update pupilId (\_ -> Just updatedPupil) pupils
 
         Nothing ->
             -- @remind this feels wrong
             pupils
 
 
-unwrap : PupilId -> String
-unwrap p =
-    case p of
-        PupilId pupilId ->
-            pupilId
-
-
 opUpdatePupil : EditPupilData -> PupilLookup -> PupilLookup
 opUpdatePupil { pupilId, pupil } pupils =
-    Dict.update (unwrap pupilId) (\_ -> Just pupil) pupils
+    Dict.update pupilId (\_ -> Just pupil) pupils
 
 
 
@@ -217,7 +209,7 @@ opUpdatePupil { pupilId, pupil } pupils =
 
 opCopyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
 opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
-    case Dict.get (unwrap pupilId) pupils of
+    case Dict.get pupilId pupils of
         Just pupil ->
             let
                 oldLesson =
@@ -229,7 +221,7 @@ opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
                 newPupil =
                     { pupil | journal = newJournal }
             in
-            Dict.update (unwrap pupilId) (\_ -> Just newPupil) pupils
+            Dict.update pupilId (\_ -> Just newPupil) pupils
 
         Nothing ->
             pupils
@@ -241,7 +233,7 @@ opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
 
 opDeleteLesson : LessonId -> PupilLookup -> PupilLookup
 opDeleteLesson ({ pupilId, date } as lessonId) pupils =
-    case Dict.get (unwrap pupilId) pupils of
+    case Dict.get pupilId pupils of
         Just pupil ->
             let
                 newPupil =
@@ -250,7 +242,7 @@ opDeleteLesson ({ pupilId, date } as lessonId) pupils =
                             Dict.remove date pupil.journal
                     }
             in
-            Dict.update (unwrap pupilId) (\_ -> Just newPupil) pupils
+            Dict.update pupilId (\_ -> Just newPupil) pupils
 
         Nothing ->
             pupils
