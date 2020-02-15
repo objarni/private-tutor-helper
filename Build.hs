@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack script --resolver lts-14.25
+-- stack script --resolver lts-11.22
 
 import Development.Shake
 import Development.Shake.FilePath
@@ -11,7 +11,7 @@ main = shakeArgs shakeOptions $ do
          ,"output/js/app.js"]
 
     "output/*.py" %> \out -> do
-        let src = replaceDirectory1 out "src"
+        let src = replaceDirectory out "src"
         need [src]
         cmd "cp" [src] "output"
 
