@@ -4,4 +4,4 @@ run:
 
 .PHONY: lci
 lci:
-	ls src/* | entr sh -c 'clear && ./Build.hs'
+	ls src/* | entr sh -c 'clear && ./Build.hs --color'
