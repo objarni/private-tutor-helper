@@ -38,5 +38,5 @@ def root():
 
 
 bottle.run(
-    reloader=True, host="localhost", port=8000,
+    reloader=True, host="0.0.0.0", port=8000,
 )
