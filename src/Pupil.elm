@@ -2,12 +2,14 @@ module Pupil exposing
     ( DateString
     , EditLessonData
     , EditPupilData
+    , Email
     , Journal
     , Lesson
     , LessonId
     , Pupil
     , PupilId
     , PupilLookup
+    , email
     , opAllLessonsExcept
     , opCopyLesson
     , opCreatePupil
@@ -40,9 +42,22 @@ type alias LessonId =
     }
 
 
+type EmailTag
+    = EmailTag
+
+
+type alias Email =
+    Tagged.Tagged EmailTag String
+
+
+email : String -> Email
+email =
+    Tagged.tag
+
+
 type alias Pupil =
     { title : String
-    , email : String
+    , email : Tagged EmailTag String
     , journal : Journal
     }
 
@@ -100,8 +115,8 @@ pupilsFromJSON =
 pupilFromJSON : D.Decoder Pupil
 pupilFromJSON =
     D.map3 Pupil
-        (D.field "Email" D.string)
         (D.field "Title" D.string)
+        (D.field "Email" (D.map Tagged.tag D.string))
         (D.field "Journal"
             (D.dict
                 lessonFromJSON
@@ -150,7 +165,7 @@ pupilToJSON : Pupil -> E.Value
 pupilToJSON pupil =
     E.object
         [ ( "Title", E.string pupil.title )
-        , ( "Email", E.string pupil.email )
+        , ( "Email", E.string (Tagged.untag pupil.email) )
         , ( "Journal", E.dict identity lessonToJSON pupil.journal )
         ]
 
@@ -185,7 +200,7 @@ opCreatePupil pupilId date pupils =
 
         newPupil =
             { title = "Mr Pupil"
-            , email = "first.last@anywhere.co.uk"
+            , email = Tagged.tag "first.last@anywhere.co.uk"
             , journal = newJournal
             }
     in

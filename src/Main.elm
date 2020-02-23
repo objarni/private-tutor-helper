@@ -422,7 +422,7 @@ type alias LessonProperty =
     }
 
 
-lessonPageElement : String -> DateString -> Lesson -> Element Msg
+lessonPageElement : Email -> DateString -> Lesson -> Element Msg
 lessonPageElement email date lesson =
     let
         data =
@@ -450,7 +450,7 @@ lessonPageElement email date lesson =
 
         mailToAttr =
             Mailto.toHref
-                (Mailto.mailto email
+                (Mailto.mailto (Tagged.untag email)
                     |> Mailto.subject subject
                     |> Mailto.body body
                 )
@@ -649,7 +649,7 @@ pupilPageElement todaysDate pupilId ({ title, email, journal } as pupil) =
         [ Element.el [ Element.centerX ]
             (Element.text <| "Title: " ++ title)
         , Element.el [ Element.centerX ]
-            (Element.text <| "Email: " ++ email)
+            (Element.text <| "Email: " ++ Tagged.untag email)
         , Element.el [ Element.centerX ]
             (buttonElement "Edit"
                 (Goto
