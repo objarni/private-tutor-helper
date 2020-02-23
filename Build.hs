@@ -21,7 +21,7 @@ main = shakeArgs shakeOptions $ do
 
     "output/js/app.js" %> \out -> do
         need ["src/Main.elm", "src/Pupil.elm"]
-        cmd "elm make src/Main.elm" ["--output=" ++ out]
+        cmd "unbuffer elm make src/Main.elm" ["--output=" ++ out]
 
     phony "clean" $ do
         -- cmd "rm -rf output/"
