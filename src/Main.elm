@@ -14,6 +14,8 @@ import Http
 import Mailto
 import Pupil exposing (..)
 import Set exposing (Set)
+import Tagged
+import Tagged.Dict
 
 
 type alias Model =
@@ -53,7 +55,7 @@ type Msg
     | CopyLesson LessonId
     | DeleteLesson LessonId
     | CreatePupil PupilId
-    | SuggestNewPupilName PupilId
+    | SuggestNewPupilName String
     | SaveLesson EditLessonData
     | DecrementDate
     | IncrementDate
@@ -81,7 +83,7 @@ subscriptions model =
 
 initialModel : String -> ( Model, Cmd Msg )
 initialModel dateNow =
-    ( { pupils = Dict.empty
+    ( { pupils = Tagged.Dict.empty
       , statusText = "Loading..."
       , page = PageMain
       , saving = False
@@ -143,7 +145,7 @@ update msg model =
         SuggestNewPupilName name ->
             let
                 nameError =
-                    validateName name model
+                    validatePupilId (Tagged.tag name) model
             in
             ( { model
                 | page =
@@ -171,7 +173,7 @@ update msg model =
                     "Saving lesson "
                         ++ editLessonData.newDate
                         ++ " of "
-                        ++ editLessonData.pupilId
+                        ++ Tagged.untag editLessonData.pupilId
                         ++ "..."
             in
             savePupilsUpdate newPupils model.todaysDate text (PagePupil editLessonData.pupilId)
@@ -189,7 +191,7 @@ update msg model =
 
                 text =
                     "Saving pupil "
-                        ++ pageData.pupilId
+                        ++ Tagged.untag pageData.pupilId
                         ++ "..."
             in
             savePupilsUpdate newPupils
@@ -247,7 +249,7 @@ gotPupilsUpdate model httpResult =
             else
                 { model
                     | pupils = loadedPupils
-                    , page = PagePupil "Bertha Babbage"
+                    , page = PagePupil (Tagged.tag "Bertha Babbage")
                     , statusText = "Debug landing page"
                 }
 
@@ -256,17 +258,20 @@ gotPupilsUpdate model httpResult =
 -- @reminder: does not need whole Model, only pupil ids!
 
 
-validateName : PupilId -> Model -> Maybe String
-validateName name model =
+validatePupilId : PupilId -> Model -> Maybe String
+validatePupilId pupilId model =
     let
+        name =
+            Tagged.untag pupilId
+
         notEmpty : String -> Bool
         notEmpty =
             not << String.isEmpty
 
         unique : String -> Bool
-        unique pupilId =
+        unique id =
             -- @remind - get rid of lookupXX functions!
-            case lookupPupil pupilId model of
+            case Tagged.Dict.get pupilId model.pupils of
                 Just pupil ->
                     False
 
@@ -312,10 +317,10 @@ findSelectedPupilId : Model -> PupilId
 findSelectedPupilId { pupils, page } =
     case page of
         PageMain ->
-            ""
+            Tagged.tag ""
 
         PageAddPupil _ ->
-            ""
+            Tagged.tag ""
 
         PagePupil pupilId ->
             pupilId
@@ -405,6 +410,8 @@ viewElement model =
         , Element.width (Element.maximum containerWidth Element.fill)
         ]
         [ headerElement model.statusText
+
+        --, Element.text <| String.fromInt <| 4 * (1000 + 1850 + 5 * 300 + 12 * 1000)
         , content
         ]
 
@@ -581,14 +588,14 @@ addPupilPageElement pageData =
         button =
             case pageData.nameError of
                 Nothing ->
-                    buttonElement "Save" <| CreatePupil pageData.name
+                    buttonElement "Save" <| CreatePupil (Tagged.tag pageData.name)
 
                 Just error ->
                     disabledButtonElement "Save"
     in
     Element.column [ Element.centerX ]
         [ Input.text []
-            { onChange = \x -> SuggestNewPupilName x
+            { onChange = \name -> SuggestNewPupilName name
             , text = pageData.name
             , placeholder = Nothing
             , label = Input.labelAbove [] (Element.text "Pupil name")
@@ -608,14 +615,15 @@ addPupilPageElement pageData =
 
 lookupPupil : PupilId -> Model -> Maybe Pupil
 lookupPupil pupilName { pupils } =
-    Dict.get pupilName pupils
+    -- @remind remove this function ?
+    Tagged.Dict.get pupilName pupils
 
 
 lookupLesson : LessonId -> Model -> Maybe Lesson
 lookupLesson { pupilId, date } { pupils } =
     let
         maybeRightPupil =
-            Dict.get pupilId pupils
+            Tagged.Dict.get pupilId pupils
 
         maybeLesson =
             case maybeRightPupil of
@@ -629,7 +637,11 @@ lookupLesson { pupilId, date } { pupils } =
 
 
 pupilPageElement : DateString -> PupilId -> Pupil -> Element Msg
-pupilPageElement todaysDate name ({ title, email, journal } as pupil) =
+pupilPageElement todaysDate pupilId ({ title, email, journal } as pupil) =
+    let
+        pupilName =
+            Tagged.untag pupilId
+    in
     Element.column
         [ Element.centerX
         , Element.spacing bigSpace
@@ -641,11 +653,11 @@ pupilPageElement todaysDate name ({ title, email, journal } as pupil) =
         , Element.el [ Element.centerX ]
             (buttonElement "Edit"
                 (Goto
-                    (PageEditPupil { pupil = pupil, pupilId = name })
-                    (Just ("Editing " ++ name))
+                    (PageEditPupil { pupil = pupil, pupilId = pupilId })
+                    (Just ("Editing " ++ pupilName))
                 )
             )
-        , lessonsElement todaysDate journal name
+        , lessonsElement todaysDate journal pupilId
         ]
 
 
@@ -704,7 +716,8 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
             }
 
         gotoMsg =
-            Goto (PageLesson lessonId) (Just ("Lesson for " ++ pupilId ++ " at " ++ lessonDate))
+            Goto (PageLesson lessonId)
+                (Just ("Lesson for " ++ Tagged.untag pupilId ++ " at " ++ lessonDate))
     in
     Element.el
         (lightBorder
@@ -732,7 +745,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
                             , otherLessonDates = opAllLessonsExcept journal lessonDate
                             }
                         )
-                        (Just <| "Editing " ++ lessonDate ++ " of " ++ pupilId)
+                        (Just <| "Editing " ++ lessonDate ++ " of " ++ Tagged.untag pupilId)
                     )
                 , if onlyLessonOfPupil then
                     disabledButtonElement "Delete"
@@ -774,7 +787,7 @@ pupilsPageElement : PupilLookup -> Element Msg
 pupilsPageElement pupils =
     let
         pupilNames =
-            Dict.keys pupils
+            Tagged.Dict.untaggedKeys pupils
     in
     Element.column
         [ Element.padding bigSpace, Element.centerX ]
@@ -800,7 +813,7 @@ pupilsPageElement pupils =
 pupilButtonElement pupil =
     buttonElement pupil
         (Goto
-            (PagePupil pupil)
+            (PagePupil <| Tagged.tag pupil)
             (Just ("Viewing " ++ pupil))
         )
 

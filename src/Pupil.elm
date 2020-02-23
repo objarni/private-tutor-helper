@@ -22,10 +22,12 @@ import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
 import Set exposing (Set)
+import Tagged exposing (Tagged)
+import Tagged.Dict exposing (TaggedDict)
 
 
 type alias PupilId =
-    String
+    Tagged PupilIdTag String
 
 
 type alias DateString =
@@ -33,7 +35,7 @@ type alias DateString =
 
 
 type alias LessonId =
-    { pupilId : String
+    { pupilId : PupilId
     , date : String
     }
 
@@ -43,10 +45,6 @@ type alias Pupil =
     , email : String
     , journal : Journal
     }
-
-
-type alias PupilLookup =
-    Dict PupilId Pupil
 
 
 type alias Journal =
@@ -85,10 +83,18 @@ type alias EditPupilData =
 -- Decoders (JSON -> type)
 
 
+type PupilIdTag
+    = PupilIdTag
+
+
+type alias PupilLookup =
+    TaggedDict PupilIdTag String Pupil
+
+
 pupilsFromJSON : D.Decoder PupilLookup
 pupilsFromJSON =
     D.field "Pupils"
-        (D.dict pupilFromJSON)
+        (D.keyValuePairs pupilFromJSON |> D.map Tagged.Dict.fromUntaggedList)
 
 
 pupilFromJSON : D.Decoder Pupil
@@ -122,8 +128,21 @@ pupilsToJSONString savePupils =
 
 pupilsToJSON : PupilLookup -> E.Value
 pupilsToJSON pupils =
+    let
+        untaggedIds =
+            Tagged.Dict.untaggedKeys pupils
+
+        pupilsList =
+            Tagged.Dict.values pupils
+
+        pupilValues =
+            List.map pupilToJSON pupilsList
+
+        weave =
+            List.map2 Tuple.pair untaggedIds pupilValues
+    in
     E.object
-        [ ( "Pupils", E.dict identity pupilToJSON pupils )
+        [ ( "Pupils", E.object weave )
         ]
 
 
@@ -170,7 +189,7 @@ opCreatePupil pupilId date pupils =
             , journal = newJournal
             }
     in
-    Dict.update pupilId (\_ -> Just newPupil) pupils
+    Tagged.Dict.update pupilId (\_ -> Just newPupil) pupils
 
 
 
@@ -179,7 +198,7 @@ opCreatePupil pupilId date pupils =
 
 opUpdateLesson : EditLessonData -> PupilLookup -> PupilLookup
 opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
-    case Dict.get pupilId pupils of
+    case Tagged.Dict.get pupilId pupils of
         Just pupil ->
             let
                 journalWithoutOldLesson =
@@ -191,7 +210,7 @@ opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
                 updatedPupil =
                     { pupil | journal = newJournal }
             in
-            Dict.update pupilId (\_ -> Just updatedPupil) pupils
+            Tagged.Dict.update pupilId (\_ -> Just updatedPupil) pupils
 
         Nothing ->
             -- @remind this feels wrong
@@ -200,7 +219,7 @@ opUpdateLesson { pupilId, newDate, lesson, oldDate } pupils =
 
 opUpdatePupil : EditPupilData -> PupilLookup -> PupilLookup
 opUpdatePupil { pupilId, pupil } pupils =
-    Dict.update pupilId (\_ -> Just pupil) pupils
+    Tagged.Dict.update pupilId (\_ -> Just pupil) pupils
 
 
 
@@ -209,7 +228,7 @@ opUpdatePupil { pupilId, pupil } pupils =
 
 opCopyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
 opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
-    case Dict.get pupilId pupils of
+    case Tagged.Dict.get pupilId pupils of
         Just pupil ->
             let
                 oldLesson =
@@ -221,7 +240,7 @@ opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
                 newPupil =
                     { pupil | journal = newJournal }
             in
-            Dict.update pupilId (\_ -> Just newPupil) pupils
+            Tagged.Dict.update pupilId (\_ -> Just newPupil) pupils
 
         Nothing ->
             pupils
@@ -233,7 +252,7 @@ opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
 
 opDeleteLesson : LessonId -> PupilLookup -> PupilLookup
 opDeleteLesson ({ pupilId, date } as lessonId) pupils =
-    case Dict.get pupilId pupils of
+    case Tagged.Dict.get pupilId pupils of
         Just pupil ->
             let
                 newPupil =
@@ -242,7 +261,7 @@ opDeleteLesson ({ pupilId, date } as lessonId) pupils =
                             Dict.remove date pupil.journal
                     }
             in
-            Dict.update pupilId (\_ -> Just newPupil) pupils
+            Tagged.Dict.update pupilId (\_ -> Just newPupil) pupils
 
         Nothing ->
             pupils
