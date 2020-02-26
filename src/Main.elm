@@ -460,12 +460,15 @@ lessonPageElement email date lesson =
                 (Element.html
                     (Html.a [ mailToAttr ] [ Html.text "Write mail summary" ])
                 )
+
+        para s =
+            Element.paragraph [] [ Element.text s ]
     in
     Element.column [ Element.centerX ]
         [ Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
-            [ Element.text <| "This lesson: " ++ lesson.thisfocus
-            , Element.text <| "Next lesson: " ++ lesson.nextfocus
-            , Element.text <| "Homework: " ++ lesson.homework
+            [ para <| "This lesson: " ++ lesson.thisfocus
+            , para <| "Next lesson: " ++ lesson.nextfocus
+            , para <| "Homework: " ++ lesson.homework
             ]
         , mailtoLink
         ]
@@ -561,7 +564,7 @@ editPupilPageElement pageData =
                 , onChange =
                     \x ->
                         Goto
-                            (PageEditPupil pageData)
+                            (PageEditPupil { pageData | pupil = modifyPupil x })
                             Nothing
                 }
     in
@@ -574,6 +577,10 @@ editPupilPageElement pageData =
             "Title"
             pupil.title
             (\x -> { pupil | title = x })
+        , fieldInput
+            "Email"
+            (Tagged.untag pupil.email)
+            (\x -> { pupil | email = email x })
         , Element.el [ Element.centerX ]
             (buttonElement
                 "Save"
