@@ -14,6 +14,7 @@ The previous iteration of this system was a single `journal.json` file structure
   "Pupils": {
     "Bill Klinton": {
       "Title": "CEO Digital Soft",
+      "Email": "bill@klingon.net",
       "Journal": {
         "2019-12-01": {
           "Location": "At his home",
