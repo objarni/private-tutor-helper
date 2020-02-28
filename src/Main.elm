@@ -709,7 +709,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
     let
         lessonText : Lesson -> String
         lessonText { thisfocus } =
-            String.slice 0 35 ("fixme" ++ ": " ++ thisfocus) ++ ".."
+            String.slice 0 115 thisfocus ++ ".."
 
         onlyLessonOfPupil =
             List.length (Dict.keys journal) == 1
@@ -734,7 +734,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
         )
         (Element.column [ Element.spacing smallSpace ]
             [ Element.text <| lessonDate
-            , Element.paragraph [] [ Element.text lesson.thisfocus ]
+            , Element.paragraph [] [ Element.text (lessonText lesson) ]
             , Element.wrappedRow [ Element.alignBottom, Element.spacing smallSpace ]
                 [ buttonElement "View" gotoMsg
                 , if not hasLessonWithTodaysDate then
