@@ -425,28 +425,16 @@ type alias LessonProperty =
 lessonPageElement : Email -> DateString -> Lesson -> Element Msg
 lessonPageElement email date lesson =
     let
-        data =
-            [ { field = "Focus"
-              , value = lesson.thisfocus
-              }
-            , { field = "Next time"
-              , value = lesson.nextfocus
-              }
-            , { field = "Homework"
-              , value = lesson.homework
-              }
-            ]
-
         subject =
             "Summary of lesson " ++ date
 
         body =
             "This lesson: "
                 ++ lesson.thisfocus
-                ++ "\nNext lesson: "
-                ++ lesson.nextfocus
                 ++ "\nHomework: "
                 ++ lesson.homework
+                ++ "\nNext lesson: "
+                ++ lesson.nextfocus
 
         mailToAttr =
             Mailto.toHref
@@ -467,8 +455,8 @@ lessonPageElement email date lesson =
     Element.column [ Element.centerX ]
         [ Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
             [ para <| "This lesson: " ++ lesson.thisfocus
-            , para <| "Next lesson: " ++ lesson.nextfocus
             , para <| "Homework: " ++ lesson.homework
+            , para <| "Next lesson: " ++ lesson.nextfocus
             ]
         , mailtoLink
         ]
