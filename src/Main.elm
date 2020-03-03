@@ -432,7 +432,7 @@ lessonPageElement email date lesson =
             "This lesson: "
                 ++ lesson.thisfocus
                 ++ "\nHomework: "
-                ++ lesson.homework
+                ++ Tagged.untag lesson.homework
                 ++ "\nNext lesson: "
                 ++ lesson.nextfocus
 
@@ -455,7 +455,7 @@ lessonPageElement email date lesson =
     Element.column [ Element.centerX ]
         [ Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
             [ para <| "This lesson: " ++ lesson.thisfocus
-            , para <| "Homework: " ++ lesson.homework
+            , para <| "Homework: " ++ Tagged.untag lesson.homework
             , para <| "Next lesson: " ++ lesson.nextfocus
             ]
         , mailtoLink
@@ -522,7 +522,10 @@ editLessonPageElement pageData =
             lesson.thisfocus
             (\x -> { lesson | thisfocus = x })
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
-        , fieldInput "Homework" lesson.homework (\x -> { lesson | homework = x })
+        , fieldInput
+            "Homework"
+            (Tagged.untag lesson.homework)
+            (\x -> { lesson | homework = homework x })
         , Element.el [ Element.centerX ]
             (if dateIsFree then
                 buttonElement "Save" (SaveLesson pageData)

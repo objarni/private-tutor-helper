@@ -10,6 +10,7 @@ module Pupil exposing
     , PupilId
     , PupilLookup
     , email
+    , homework
     , opAllLessonsExcept
     , opCopyLesson
     , opCreatePupil
@@ -43,20 +44,16 @@ type alias LessonId =
     }
 
 
+
+-- Tagged type Email
+
+
 type EmailTag
     = EmailTag
 
 
-type TitleTag
-    = TitleTag
-
-
 type alias Email =
     Tagged.Tagged EmailTag String
-
-
-type alias Title =
-    Tagged.Tagged TitleTag String
 
 
 email : String -> Email
@@ -64,8 +61,55 @@ email =
     Tagged.tag
 
 
+
+-- Tagged type title
+
+
+type TitleTag
+    = TitleTag
+
+
+type alias Title =
+    Tagged.Tagged TitleTag String
+
+
 title : String -> Title
 title =
+    Tagged.tag
+
+
+
+-- Tagged type Homework
+
+
+type HomeworkTag
+    = HomeworkTag
+
+
+type alias Homework =
+    Tagged.Tagged HomeworkTag String
+
+
+homework : String -> Homework
+homework =
+    Tagged.tag
+
+
+
+-- Tagged type Location
+-- @remind Location not used in UI - remove?
+
+
+type LocationTag
+    = LocationTag
+
+
+type alias Location =
+    Tagged.Tagged LocationTag String
+
+
+location : String -> Location
+location =
     Tagged.tag
 
 
@@ -82,8 +126,8 @@ type alias Journal =
 
 type alias Lesson =
     { thisfocus : String
-    , location : String
-    , homework : String
+    , location : Location
+    , homework : Homework
     , nextfocus : String
     }
 
@@ -141,8 +185,8 @@ pupilFromJSON =
 lessonFromJSON =
     D.map4 Lesson
         (D.field "ThisFocus" D.string)
-        (D.field "Location" D.string)
-        (D.field "Homework" D.string)
+        (D.field "Location" (D.map location D.string))
+        (D.field "Homework" (D.map homework D.string))
         (D.field "NextFocus" D.string)
 
 
@@ -188,8 +232,8 @@ lessonToJSON : Lesson -> E.Value
 lessonToJSON lesson =
     E.object
         [ ( "ThisFocus", E.string lesson.thisfocus )
-        , ( "Location", E.string lesson.location )
-        , ( "Homework", E.string lesson.homework )
+        , ( "Location", E.string (Tagged.untag lesson.location) )
+        , ( "Homework", E.string (Tagged.untag lesson.homework) )
         , ( "NextFocus", E.string lesson.nextfocus )
         ]
 
@@ -205,8 +249,8 @@ opCreatePupil pupilId date pupils =
             Just
                 { thisfocus = "Learn stuff"
                 , nextfocus = "Learn more stuff"
-                , homework = "Practice, practice, practice"
-                , location = "Remote"
+                , homework = homework "Practice, practice, practice"
+                , location = location "Remote"
                 }
 
         newJournal =
