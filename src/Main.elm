@@ -430,7 +430,7 @@ lessonPageElement email date lesson =
 
         body =
             "This lesson: "
-                ++ lesson.thisfocus
+                ++ Tagged.untag lesson.thisfocus
                 ++ "\nHomework: "
                 ++ Tagged.untag lesson.homework
                 ++ "\nNext lesson: "
@@ -454,7 +454,7 @@ lessonPageElement email date lesson =
     in
     Element.column [ Element.centerX ]
         [ Element.column (lightBorder ++ [ Element.spacing smallSpace, Element.centerX ])
-            [ para <| "This lesson: " ++ lesson.thisfocus
+            [ para <| "This lesson: " ++ Tagged.untag lesson.thisfocus
             , para <| "Homework: " ++ Tagged.untag lesson.homework
             , para <| "Next lesson: " ++ lesson.nextfocus
             ]
@@ -519,8 +519,8 @@ editLessonPageElement pageData =
             ]
         , fieldInput
             "Focus"
-            lesson.thisfocus
-            (\x -> { lesson | thisfocus = x })
+            (Tagged.untag lesson.thisfocus)
+            (\x -> { lesson | thisfocus = thisFocus x })
         , fieldInput "Next focus" lesson.nextfocus (\x -> { lesson | nextfocus = x })
         , fieldInput
             "Homework"
@@ -700,7 +700,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
     let
         lessonText : Lesson -> String
         lessonText { thisfocus } =
-            String.slice 0 115 thisfocus ++ ".."
+            String.slice 0 115 (Tagged.untag thisfocus) ++ ".."
 
         onlyLessonOfPupil =
             List.length (Dict.keys journal) == 1

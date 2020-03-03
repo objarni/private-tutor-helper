@@ -19,6 +19,7 @@ module Pupil exposing
     , opUpdatePupil
     , pupilsFromJSON
     , pupilsToJSONString
+    , thisFocus
     , title
     )
 
@@ -113,6 +114,23 @@ location =
     Tagged.tag
 
 
+
+-- Tagged type ThisFocus
+
+
+type ThisFocusTag
+    = ThisFocusTag
+
+
+type alias ThisFocus =
+    Tagged.Tagged ThisFocusTag String
+
+
+thisFocus : String -> ThisFocus
+thisFocus =
+    Tagged.tag
+
+
 type alias Pupil =
     { title : Title
     , email : Email
@@ -125,7 +143,7 @@ type alias Journal =
 
 
 type alias Lesson =
-    { thisfocus : String
+    { thisfocus : ThisFocus
     , location : Location
     , homework : Homework
     , nextfocus : String
@@ -184,7 +202,7 @@ pupilFromJSON =
 
 lessonFromJSON =
     D.map4 Lesson
-        (D.field "ThisFocus" D.string)
+        (D.field "ThisFocus" (D.map thisFocus D.string))
         (D.field "Location" (D.map location D.string))
         (D.field "Homework" (D.map homework D.string))
         (D.field "NextFocus" D.string)
@@ -231,7 +249,7 @@ pupilToJSON pupil =
 lessonToJSON : Lesson -> E.Value
 lessonToJSON lesson =
     E.object
-        [ ( "ThisFocus", E.string lesson.thisfocus )
+        [ ( "ThisFocus", E.string (Tagged.untag lesson.thisfocus) )
         , ( "Location", E.string (Tagged.untag lesson.location) )
         , ( "Homework", E.string (Tagged.untag lesson.homework) )
         , ( "NextFocus", E.string lesson.nextfocus )
@@ -247,7 +265,7 @@ opCreatePupil pupilId date pupils =
     let
         insertLesson _ =
             Just
-                { thisfocus = "Learn stuff"
+                { thisfocus = thisFocus "Learn stuff"
                 , nextfocus = "Learn more stuff"
                 , homework = homework "Practice, practice, practice"
                 , location = location "Remote"
