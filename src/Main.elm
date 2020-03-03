@@ -563,8 +563,8 @@ editPupilPageElement pageData =
         ]
         [ fieldInput
             "Title"
-            pupil.title
-            (\x -> { pupil | title = x })
+            (Tagged.untag pupil.title)
+            (\x -> { pupil | title = title x })
         , fieldInput
             "Email"
             (Tagged.untag pupil.email)
@@ -642,7 +642,7 @@ pupilPageElement todaysDate pupilId ({ title, email, journal } as pupil) =
         , Element.spacing bigSpace
         ]
         [ Element.el [ Element.centerX ]
-            (Element.text <| "Title: " ++ title)
+            (Element.text <| "Title: " ++ Tagged.untag title)
         , Element.el [ Element.centerX ]
             (Element.text <| "Email: " ++ Tagged.untag email)
         , Element.el [ Element.centerX ]

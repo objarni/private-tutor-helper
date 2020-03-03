@@ -18,6 +18,7 @@ module Pupil exposing
     , opUpdatePupil
     , pupilsFromJSON
     , pupilsToJSONString
+    , title
     )
 
 import Dict exposing (Dict)
@@ -46,8 +47,16 @@ type EmailTag
     = EmailTag
 
 
+type TitleTag
+    = TitleTag
+
+
 type alias Email =
     Tagged.Tagged EmailTag String
+
+
+type alias Title =
+    Tagged.Tagged TitleTag String
 
 
 email : String -> Email
@@ -55,9 +64,14 @@ email =
     Tagged.tag
 
 
+title : String -> Title
+title =
+    Tagged.tag
+
+
 type alias Pupil =
-    { title : String
-    , email : Tagged EmailTag String
+    { title : Title
+    , email : Email
     , journal : Journal
     }
 
@@ -115,8 +129,8 @@ pupilsFromJSON =
 pupilFromJSON : D.Decoder Pupil
 pupilFromJSON =
     D.map3 Pupil
-        (D.field "Title" D.string)
-        (D.field "Email" (D.map Tagged.tag D.string))
+        (D.field "Title" (D.map title D.string))
+        (D.field "Email" (D.map email D.string))
         (D.field "Journal"
             (D.dict
                 lessonFromJSON
@@ -164,7 +178,7 @@ pupilsToJSON pupils =
 pupilToJSON : Pupil -> E.Value
 pupilToJSON pupil =
     E.object
-        [ ( "Title", E.string pupil.title )
+        [ ( "Title", E.string (Tagged.untag pupil.title) )
         , ( "Email", E.string (Tagged.untag pupil.email) )
         , ( "Journal", E.dict identity lessonToJSON pupil.journal )
         ]
@@ -199,8 +213,8 @@ opCreatePupil pupilId date pupils =
             Dict.update date insertLesson Dict.empty
 
         newPupil =
-            { title = "Mr Pupil"
-            , email = Tagged.tag "first.last@anywhere.co.uk"
+            { title = title "Mr Pupil"
+            , email = email "first.last@anywhere.co.uk"
             , journal = newJournal
             }
     in
