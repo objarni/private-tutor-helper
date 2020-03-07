@@ -781,11 +781,40 @@ headerElement statusText =
         ]
 
 
+newsLetterTemplate =
+    """
+Hej!
+
+LORUM IPSUM
+
+
+Mvh
+
+/Olof
+
+
+PS. Du får detta mail för att du är (eller har varit) privatelev hos https://OlofBjarnason.se
+Om du inte längre vill få dessa mail, svara 'STOPP' på detta mail så tar jag bort dig ifrån maillistan!
+DS.
+"""
+
+
 pupilsPageElement : PupilLookup -> Element Msg
 pupilsPageElement pupils =
     let
         pupilNames =
             Tagged.Dict.untaggedKeys pupils
+
+        emailAddresses =
+            List.map (.email >> Tagged.untag) (Tagged.Dict.values pupils)
+
+        mailToAttr =
+            Mailto.toHref
+                (Mailto.mailto "olof.bjarnason@gmail.com"
+                    |> Mailto.subject "Hej!"
+                    |> Mailto.body newsLetterTemplate
+                    |> Mailto.bcc emailAddresses
+                )
     in
     Element.column
         [ Element.padding bigSpace, Element.centerX ]
@@ -804,6 +833,10 @@ pupilsPageElement pupils =
                     )
                     (Just "Add new pupil")
                 )
+            )
+        , Element.el [ Element.centerX, Element.padding smallSpace ]
+            (Element.html
+                (Html.a [ mailToAttr ] [ Html.text "Write news letter" ])
             )
         ]
 
