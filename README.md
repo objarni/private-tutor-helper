@@ -48,3 +48,9 @@ The previous iteration of this system was a single `journal.json` file structure
   - git + GitHub for hosting, version control and CI
   - Make for building, testing, serving app
 
+
+### TODO
+
+  - go back to makefile development workflow (remove Build.hs)
+  - introduce elm-test to project (investigate how this is installed properly in 19.1 nowadays)
+  - introduce elm-program-test for regression testing
