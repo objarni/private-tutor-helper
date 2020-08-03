@@ -1,4 +1,4 @@
-module Main exposing (main)
+module Main exposing (initialModel, main, update, view)
 
 import Browser exposing (sandbox)
 import Date
@@ -16,6 +16,7 @@ import Pupil exposing (..)
 import Set exposing (Set)
 import Tagged
 import Tagged.Dict
+import Tuple
 
 
 type alias Model =
@@ -66,11 +67,43 @@ type Msg
 -- @remind IDEA: LessonMsg EditLessonData LessonMsgKind ??
 
 
+type Effect
+    = NoEffect
+    | LoadPupils
+    | SavePupils PupilLookup
+
+
+perform : Effect -> Cmd Msg
+perform effect =
+    case effect of
+        NoEffect ->
+            Cmd.none
+
+        LoadPupils ->
+            Http.get
+                { url = "/journal.json"
+                , expect = Http.expectJson GotPupils pupilsFromJSON
+                }
+
+        SavePupils pupils ->
+            Http.post
+                { url = "/save"
+                , body = Http.stringBody "application/json" <| pupilsToJSONString pupils
+                , expect = Http.expectString PutPupils
+                }
+
+
 main : Program String Model Msg
 main =
     Browser.element
-        { init = initialModel
-        , update = update
+        { init =
+            \flags ->
+                initialModel flags
+                    |> Tuple.mapSecond perform
+        , update =
+            \msg model ->
+                update msg model
+                    |> Tuple.mapSecond perform
         , view = view
         , subscriptions = subscriptions
         }
@@ -81,7 +114,7 @@ subscriptions model =
     Sub.none
 
 
-initialModel : String -> ( Model, Cmd Msg )
+initialModel : String -> ( Model, Effect )
 initialModel dateNow =
     ( { pupils = Tagged.Dict.empty
       , statusText = "Loading..."
@@ -89,14 +122,11 @@ initialModel dateNow =
       , saving = False
       , todaysDate = dateNow
       }
-    , Http.get
-        { url = "/journal.json"
-        , expect = Http.expectJson GotPupils pupilsFromJSON
-        }
+    , LoadPupils
     )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Effect )
 update msg model =
     let
         selectedPupilId =
@@ -105,19 +135,19 @@ update msg model =
     case msg of
         GotPupils result ->
             ( gotPupilsUpdate model result
-            , Cmd.none
+            , NoEffect
             )
 
         Goto page maybeStatusText ->
             case maybeStatusText of
                 Just text ->
                     ( { model | page = page, statusText = text }
-                    , Cmd.none
+                    , NoEffect
                     )
 
                 Nothing ->
                     ( { model | page = page }
-                    , Cmd.none
+                    , NoEffect
                     )
 
         CopyLesson lessonId ->
@@ -139,7 +169,7 @@ update msg model =
                 | saving = False
                 , statusText = "Journal saved."
               }
-            , Cmd.none
+            , NoEffect
             )
 
         SuggestNewPupilName name ->
@@ -154,7 +184,7 @@ update msg model =
                         , name = name
                         }
               }
-            , Cmd.none
+            , NoEffect
             )
 
         CreatePupil pupilId ->
@@ -200,7 +230,7 @@ update msg model =
                 (PagePupil pageData.pupilId)
 
 
-modifyNewLessonDateUpdate : Int -> Model -> ( Model, Cmd a )
+modifyNewLessonDateUpdate : Int -> Model -> ( Model, Effect )
 modifyNewLessonDateUpdate direction model =
     let
         lessonData =
@@ -225,7 +255,7 @@ modifyNewLessonDateUpdate direction model =
     ( { model
         | page = PageEditLesson { lessonData | newDate = updatedDate }
       }
-    , Cmd.none
+    , NoEffect
     )
 
 
@@ -292,7 +322,7 @@ validatePupilId pupilId model =
     nameError
 
 
-savePupilsUpdate : PupilLookup -> DateString -> String -> Page -> ( Model, Cmd Msg )
+savePupilsUpdate : PupilLookup -> DateString -> String -> Page -> ( Model, Effect )
 savePupilsUpdate pupils today text nextPage =
     ( { pupils = pupils
       , saving = True
@@ -300,11 +330,7 @@ savePupilsUpdate pupils today text nextPage =
       , page = nextPage
       , todaysDate = today
       }
-    , Http.post
-        { url = "/save"
-        , body = Http.stringBody "application/json" <| pupilsToJSONString pupils
-        , expect = Http.expectString PutPupils
-        }
+    , SavePupils pupils
     )
 
 
