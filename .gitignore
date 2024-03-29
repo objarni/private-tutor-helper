@@ -5,3 +5,5 @@ repl-temp-*
 output/
 todo.txt
 .shake/
+.idea/
+index.html
