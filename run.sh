@@ -1,3 +1,4 @@
 #!/bin/bash
 set -e
-py output/server.py
+cd output
+py server.py

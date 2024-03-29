@@ -23,8 +23,9 @@
 
             return [year, month, day].join('-')
         }
-
+        console.log("Hello");
         var initialModel = formatDate(Date.now())
+        console.log(initialModel);
 
         var app = Elm.Main.init(
             { node: document.getElementById("elm-app")
