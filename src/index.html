@@ -21,14 +21,16 @@
             if (day.length < 2) 
                 day = '0' + day;
 
-            return [year, month, day].join('-');
+            return [year, month, day].join('-')
         }
+
+        var initialModel = formatDate(Date.now())
 
         var app = Elm.Main.init(
             { node: document.getElementById("elm-app")
-            , flags: formatDate(Date.now())
-        }
-        );
+            , flags: initialModel
+            }
+        )
 
     </script>
 </body>
