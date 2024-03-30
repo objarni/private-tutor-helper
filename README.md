@@ -45,11 +45,10 @@ Also make sure Python3.6+ is available.
 
 ### How do I build the app?
 
-
     ./build.sh
 
-### How do I run the app?
 
+### How do I run the app?
 
     ./run.sh
 
