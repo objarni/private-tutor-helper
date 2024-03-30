@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Browser exposing (sandbox)
+import Browser
 import Date
 import Dict exposing (Dict)
 import Element exposing (Element)
@@ -9,7 +9,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
-import Html.Events
+import Html.Attributes exposing (target)
 import Http
 import Mailto
 import Pupil exposing (..)
@@ -446,7 +446,7 @@ lessonPageElement email date lesson =
         mailtoLink =
             Element.el [ Element.centerX, Element.padding smallSpace ]
                 (Element.html
-                    (Html.a [ mailToAttr ] [ Html.text "Write mail summary" ])
+                    (Html.a [ mailToAttr, target "_blank" ] [ Html.text "Write mail summary" ])
                 )
 
         para s =
@@ -836,7 +836,7 @@ pupilsPageElement pupils =
             )
         , Element.el [ Element.centerX, Element.padding smallSpace ]
             (Element.html
-                (Html.a [ mailToAttr ] [ Html.text "Write news letter" ])
+                (Html.a [ mailToAttr, target "_blank"] [ Html.text "Write news letter" ])
             )
         ]
 
