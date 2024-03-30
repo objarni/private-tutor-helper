@@ -13,11 +13,29 @@ static_paths = [
 ]
 
 
+@bottle.route(f"/{JOURNAL_PATH}")
+def load():
+    print("Loading journal!")
+    response = bottle.static_file(JOURNAL_PATH, "..")
+    response.set_header("Cache-Control", "public, max-age=5")
+    return response
+
+
+@bottle.route("/save", method="POST")
+def save():
+    print("Saving journal!")
+    with open(f"../{JOURNAL_PATH}", "wb") as f:
+        time.sleep(SLOWDOWN)
+        content = bottle.request.body.read()
+        f.write(content)
+    return "SUCCESS"
+
+
 @bottle.route("/<path:re:.*>")
 def path(path):
-    print("Current work directory: ", os.getcwd())
-    print("Serving path", path)
+    print("GET", path)
     if path in static_paths:
+        print("Current work directory: ", os.getcwd())
         time.sleep(SLOWDOWN)
         response = bottle.static_file(path, ".")
         # print("First part of response: ", response.body[:100])
@@ -25,15 +43,6 @@ def path(path):
         return response
     else:
         return "Unknown path"
-
-
-@bottle.route("/save", method="POST")
-def save():
-    with open(JOURNAL_PATH, "wb") as f:
-        time.sleep(SLOWDOWN)
-        content = bottle.request.body.read()
-        f.write(content)
-    return "SUCCESS"
 
 
 @bottle.route("/")
