@@ -318,7 +318,7 @@ opUpdatePupil { pupilId, pupil } pupils =
 
 
 opCopyLesson : LessonId -> DateString -> PupilLookup -> PupilLookup
-opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
+opCopyLesson { pupilId, date } todaysDate pupils =
     case Tagged.Dict.get pupilId pupils of
         Just pupil ->
             let
@@ -342,7 +342,7 @@ opCopyLesson ({ pupilId, date } as lessonId) todaysDate pupils =
 
 
 opDeleteLesson : LessonId -> PupilLookup -> PupilLookup
-opDeleteLesson ({ pupilId, date } as lessonId) pupils =
+opDeleteLesson { pupilId, date } pupils =
     case Tagged.Dict.get pupilId pupils of
         Just pupil ->
             let
