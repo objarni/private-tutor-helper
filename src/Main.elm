@@ -741,6 +741,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
                             , lesson = lesson
                             , oldDate = lessonDate
                             , otherLessonDates = opAllLessonsExcept journal lessonDate
+                            , confirmDeletePopup = False
                             }
                         )
                         (Just <| "Editing " ++ lessonDate ++ " of " ++ Tagged.untag pupilId)
