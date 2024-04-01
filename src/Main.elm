@@ -520,11 +520,6 @@ editLessonPageElement pageData onlyLessonOfPupil =
                 ]
             , duplicateDateElement
             ]
-        , if showDeleteConfirm then
-            Element.text "Are you sure?"
-
-          else
-            Element.none
         , fieldInput
             "Focus"
             (Tagged.untag lesson.thisfocus)
