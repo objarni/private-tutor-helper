@@ -53,12 +53,12 @@ type Msg
     | PutPupils (Result Http.Error String)
     | Goto Page (Maybe String)
     | CopyLesson LessonId
-    | DeleteLesson LessonId
     | CreatePupil PupilId
     | SuggestNewPupilName String
-    | SaveLesson EditLessonData
     | DecrementDate
     | IncrementDate
+    | SaveLesson EditLessonData
+    | DeleteLesson LessonId
     | SavePupil EditPupilData
 
 
