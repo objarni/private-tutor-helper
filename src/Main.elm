@@ -399,7 +399,7 @@ viewElement model =
                             Element.text "Huh?"
 
                 PageEditLesson editLessonData ->
-                    editLessonPageElement editLessonData
+                    editLessonPageElement editLessonData (Tagged.Dict.size model.pupils == 1)
 
                 PageEditPupil editPupilData ->
                     editPupilPageElement editPupilData
@@ -462,14 +462,17 @@ lessonPageElement email date lesson =
         ]
 
 
-editLessonPageElement : EditLessonData -> Element Msg
-editLessonPageElement pageData =
+editLessonPageElement : EditLessonData -> Bool -> Element Msg
+editLessonPageElement pageData onlyLessonOfPupil =
     let
         { lesson } =
             pageData
 
         pageWidth =
             round (containerWidth / 2)
+
+        showDeleteConfirm =
+            pageData.confirmDeletePopup && not onlyLessonOfPupil
 
         dateIsFree =
             not (Set.member pageData.newDate pageData.otherLessonDates)
@@ -517,6 +520,11 @@ editLessonPageElement pageData =
                 ]
             , duplicateDateElement
             ]
+        , if showDeleteConfirm then
+            Element.text "Are you sure?"
+
+          else
+            Element.none
         , fieldInput
             "Focus"
             (Tagged.untag lesson.thisfocus)
@@ -526,13 +534,22 @@ editLessonPageElement pageData =
             "Homework"
             (Tagged.untag lesson.homework)
             (\x -> { lesson | homework = homework x })
-        , Element.el [ Element.centerX ]
-            (if dateIsFree then
+        , Element.paragraph [ Element.centerX ]
+            [ if dateIsFree then
                 buttonElement "Save" (SaveLesson pageData)
 
-             else
+              else
                 disabledButtonElement "Save"
-            )
+            , if not onlyLessonOfPupil then
+                buttonElement "Delete"
+                    (Goto
+                        (PageEditLesson { pageData | confirmDeletePopup = True })
+                        Nothing
+                    )
+
+              else
+                disabledButtonElement "Delete"
+            ]
         ]
 
 
@@ -837,7 +854,7 @@ pupilsPageElement pupils =
             )
         , Element.el [ Element.centerX, Element.padding smallSpace ]
             (Element.html
-                (Html.a [ mailToAttr, target "_blank"] [ Html.text "Write news letter" ])
+                (Html.a [ mailToAttr, target "_blank" ] [ Html.text "Write news letter" ])
             )
         ]
 
