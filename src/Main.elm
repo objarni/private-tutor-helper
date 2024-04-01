@@ -764,11 +764,6 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
                         )
                         (Just <| "Editing " ++ lessonDate ++ " of " ++ Tagged.untag pupilId)
                     )
-                , if onlyLessonOfPupil then
-                    disabledButtonElement "Delete"
-
-                  else
-                    buttonElement "Delete" (DeleteLesson lessonId)
                 ]
             ]
         )
