@@ -540,16 +540,20 @@ editLessonPageElement pageData onlyLessonOfPupil =
 
               else
                 disabledButtonElement "Save"
-            , case onlyLessonOfPupil of
-                True ->
+            , case ( onlyLessonOfPupil, showDeleteConfirm ) of
+                ( True, _ ) ->
                     disabledButtonElement "Delete"
 
-                False ->
+                ( False, False ) ->
                     buttonElement "Delete"
                         (Goto
                             (PageEditLesson { pageData | confirmDeletePopup = True })
                             Nothing
                         )
+
+                ( False, True ) ->
+                    buttonElement "Click again to confirm Delete!"
+                        (DeleteLesson pageData.lessonId)
             ]
         ]
 
@@ -760,6 +764,7 @@ lessonMasterElement todaysDate pupilId journal lesson lessonDate =
                             , oldDate = lessonDate
                             , otherLessonDates = opAllLessonsExcept journal lessonDate
                             , confirmDeletePopup = False
+                            , lessonId = lessonId
                             }
                         )
                         (Just <| "Editing " ++ lessonDate ++ " of " ++ Tagged.untag pupilId)

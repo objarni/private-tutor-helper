@@ -162,6 +162,7 @@ type alias EditLessonData =
     , oldDate : DateString
     , otherLessonDates : Set DateString
     , confirmDeletePopup : Bool
+    , lessonId : LessonId
     }
 
 
