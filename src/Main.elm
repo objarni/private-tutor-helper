@@ -540,15 +540,16 @@ editLessonPageElement pageData onlyLessonOfPupil =
 
               else
                 disabledButtonElement "Save"
-            , if not onlyLessonOfPupil then
-                buttonElement "Delete"
-                    (Goto
-                        (PageEditLesson { pageData | confirmDeletePopup = True })
-                        Nothing
-                    )
+            , case onlyLessonOfPupil of
+                True ->
+                    disabledButtonElement "Delete"
 
-              else
-                disabledButtonElement "Delete"
+                False ->
+                    buttonElement "Delete"
+                        (Goto
+                            (PageEditLesson { pageData | confirmDeletePopup = True })
+                            Nothing
+                        )
             ]
         ]
 
